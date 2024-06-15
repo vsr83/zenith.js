@@ -1,4 +1,4 @@
-import { TimeConvention } from "./TimeCorrelation";
+import { TimeConvention, TimeCorrelation } from "./TimeCorrelation";
 
 /**
  * Time format.
@@ -50,6 +50,36 @@ export class TimeStamp {
      */
     public getConvention() : TimeConvention {
         return this.convention;
+    }
+
+    /**
+     * Transform timestamp to given format and convention.
+     * 
+     * @param {TimeCorrelation} corr 
+     *      Time correlation used for the transformation.
+     * @param {TimeFormat} targetFormat 
+     *      Target format.
+     * @param {TimeConvention} targetConvention 
+     *      Target convention.
+     * @returns {TimeStamp} The transformed timestamp.
+     */
+    public changeTo(corr : TimeCorrelation, targetFormat : TimeFormat, targetConvention : TimeConvention) : TimeStamp {
+        let jt : number = this.getJulian();
+        let mjd : number = this.getMjd();
+
+        const offsetDays : number = corr.computeOffset(this.getConvention(), targetConvention, jt);
+        let data;
+
+        switch(targetFormat) {
+            case TimeFormat.FORMAT_JULIAN:
+                data = jt + offsetDays;
+                break;
+            case TimeFormat.FORMAT_MJD:
+                data = mjd + offsetDays;
+                break;
+        }
+
+        return new TimeStamp(targetFormat, targetConvention, data);
     }
 
     /**

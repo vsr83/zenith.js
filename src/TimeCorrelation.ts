@@ -182,30 +182,6 @@ export class TimeCorrelation {
     }
 
     /**
-     * Convert TDT to TDB time.
-     * 
-     * @param {number} JTtdt
-     *      T Julian time.
-     * @returns {number} TDB Julian time.
-     */
-    private deltaTdtTdb(JTtdt : number) : number
-    {
-        return -32.184 / 86400.0;
-    }
-
-    /**
-     * Convert TDB to TDT time.
-     * 
-     * @param {number} JTtai
-     *      TAI Julian time.
-     * @returns {number} TDT Julian time.
-     */
-    private deltaTdbTdt(JTtai : number) : number
-    {
-        return 32.184 / 86400.0;
-    }
-
-    /**
      * Perform binary search of data.
      * 
      * @param {TimeCorrelationData} data 
