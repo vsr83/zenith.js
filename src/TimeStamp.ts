@@ -9,6 +9,19 @@ export enum TimeFormat {
 };
 
 /**
+ * Interface for GregorianTime outputs.
+ */
+export interface GregorianTime 
+{
+    year : number;
+    month : number; 
+    mday : number; 
+    hour : number;
+    minute : number; 
+    second : number;
+}
+
+/**
  * Class for storing time stamps.
  */
 export class TimeStamp {
@@ -115,6 +128,93 @@ export class TimeStamp {
     }
 
     /**
+     * Create from Gregorian time.
+     * 
+     * @param {GregorianTime} gregTime 
+     *      Gregorian time.
+     * @param {TimeConvention} convention 
+     *      Time convention.
+     * @returns {TimeStamp} Timestamp.
+     */
+    public fromGregorian(gregTime : GregorianTime, convention : TimeConvention) : TimeStamp {
+        const JT = this.timeJulianYmdhms(gregTime.year, gregTime.month,
+            gregTime.mday, gregTime.hour, gregTime.minute, gregTime.second);
+
+        return new TimeStamp(TimeFormat.FORMAT_JULIAN, convention, JT);
+    }
+
+    /**
+     * Create from timestamp.
+     * 
+     * @param {Date} date 
+     *      Timestamp.
+     * @param {TimeConvention} convention 
+     *      Time convention.
+     * @returns {TimeStamp} Timestamp.
+     */
+    public fromTimestamp(date : Date, convention : TimeConvention) {
+        const gregTime : GregorianTime = {
+            year : date.getUTCFullYear(),
+            month : date.getUTCMonth() + 1,
+            mday : date.getUTCDate(),
+            hour : date.getUTCHours(),
+            minute : date.getUTCMinutes(),
+            second : date.getUTCSeconds() + date.getUTCMilliseconds() / 1000.0
+        }
+
+        return this.fromGregorian(gregTime, convention);
+    }
+
+    /**
+     * Get Gregorian time.
+     * 
+     * @returns {GregorianTime} The Gregorian time.
+     */
+    public toGregorian() : GregorianTime {
+        const JT : number = this.getJulian();
+
+        // Meeus - Astronomical Algorithms - Chapter 7.
+        const Z = Math.floor(JT + 0.5);
+        const F = JT + 0.5 - Z;
+        let A = Z;
+        if (Z >= 2299161) 
+        {
+            let alpha = Math.floor((Z - 1867216.25) / 36524.25);
+            A = Z + 1 + alpha - Math.floor(alpha / 4.0);
+        }
+        const B = A + 1524;
+        const C = Math.floor((B - 122.1) / 365.25);
+        const D = Math.floor(365.25 * C);
+        const E = Math.floor((B - D)/30.6001);
+
+        const mday = Math.floor(B - D - Math.floor(30.6001 * E) + F);
+        let month = E - 1;
+        if (E >= 14)
+        {
+            month = E - 13;
+        }
+        let year = C - 4716;
+        if (month < 3)
+        {
+            year = C - 4715;
+        }
+
+        let JTfrac = F;
+        if (JTfrac < 0)
+        {
+            JTfrac += 1;
+        }
+        const hour = Math.floor(JTfrac * 24.0);
+        JTfrac -= hour / 24.0;
+        const minute = Math.floor(JTfrac * (24.0 * 60.0));
+        JTfrac -= minute / (24.0 * 60.0);
+        const second = JTfrac * (24.0 * 60.0 * 60.0);
+
+        return {year : year, month : month, mday : mday, 
+            hour : hour, minute : minute, second : second};
+    }
+
+    /**
      * Compute Julian Time from Modified Julian Date.
      * 
      * @param {number} mjd
@@ -134,5 +234,59 @@ export class TimeStamp {
      */
     private julianToMjd(jt : number) : number {
         return jt - 2400000.5;
+    }
+
+    /**
+     * Compute Julian date for given calendar date.
+     * 
+     * @param {number} year 
+     *      Year as an integer.
+     * @param {number} month 
+     *      Month (1-12).
+     * @param {number} mday 
+     *      Day of the month (1-31).
+     * @returns {number} Julian date.
+     */
+    private dateJulianYmd(year : number, month : number, mday : number) : number
+    {
+        if (month < 3)
+        {
+            year--;
+            month += 12;
+        }
+
+        const A = Math.floor(year / 100.0);
+        const B = Math.floor(A / 4.0);
+        const C = Math.floor(2.0 - A + B);
+        const E = Math.floor(365.25 * (year + 4716.0));
+        const F = Math.floor(30.6001 * (month + 1.0));
+
+        return C + mday + E + F - 1524.5;    
+    }
+
+    /**
+     * Compute Julian time.
+     * 
+     * @param {number} year 
+     *      Year as an integer.
+     * @param {number} month 
+     *      Month (1-12) integer.
+     * @param {number} mday 
+     *      Day of the month (1-31) integer.
+     * @param {number} hour 
+     *      Hour (0-23) integer.
+     * @param {number} minute
+     *      Minute (0-59) integer. 
+     * @param {number} second 
+     *      Second (0-60) floating point.
+     * @returns {number} An object with JD and JT for Julian date and time.
+     */
+    private timeJulianYmdhms(year : number, month : number, mday : number, 
+        hour : number, minute : number, second : number) : number
+    {
+        const JD = this.dateJulianYmd(year, month, mday);
+        const JT = JD + hour / 24.0 + minute/(24.0 * 60.0) + second/(24.0 * 60.0 * 60.0);
+
+        return JT;
     }
 };
