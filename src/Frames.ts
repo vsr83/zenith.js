@@ -1,7 +1,7 @@
 import corrData from '../data/time_correlation_data.json';
 import { StateVector } from './StateVector';
 import { Rotations } from './Rotations';
-import { NutationData } from './Nutation';
+import { Nutation, NutationData } from './Nutation';
 import { MathUtils } from './MathUtils';
 import { EarthPosition, Wgs84 } from './Wgs84';
 import { TimeStamp } from './TimeStamp';
@@ -147,6 +147,9 @@ export class FrameConversions {
     // Earth Orientation Parameters.
     private eopParams : EopParams;
 
+    // Observer position for topocentric frames.
+    private observerPosition : EarthPosition;
+
     /**
      * Public constructor.
      * 
@@ -155,6 +158,16 @@ export class FrameConversions {
      */
     public constructor(eopParams : EopParams) {
         this.eopParams = eopParams;
+    }
+
+    /**
+     * Set observer position.
+     * 
+     * @param {EarthPosition} observerPosition 
+     *      Observer position.
+     */
+    public setObserverPosition(observerPosition : EarthPosition) {
+        this.observerPosition = observerPosition;
     }
     
     /**
@@ -200,8 +213,7 @@ export class FrameConversions {
                         osvOut = FrameConversions.rotateModJ2000(osvOut,
                             this.eopParams.timeStampTdb.getJulian());
                     } else if (target == FrameOrientation.TOD) {
-                        osvOut = FrameConversions.rotateModTod(osvOut, 
-                            this.eopParams.timeStampTdb.getJulian(), this.eopParams.nutationParams);
+                        osvOut = FrameConversions.rotateModTod(osvOut, this.eopParams.nutationParams);
                     }
                     break;
                 case FrameOrientation.TOD:
@@ -212,12 +224,12 @@ export class FrameConversions {
                         osvOut = FrameConversions.rotateTodPef(osvOut, this.eopParams.GAST, 
                             this.eopParams.timeStampUt1.getJulian());
                     } else if (target == FrameOrientation.TEME) {
-                        // TODO.
+                        osvOut = FrameConversions.rotateTodTeme(osvOut, this.eopParams.nutationParams);
                     }
                     break;
                 case FrameOrientation.TEME:
                     if (target == FrameOrientation.TOD) {
-                        // TODO.
+                        osvOut = FrameConversions.rotateTemeTod(osvOut, this.eopParams.nutationParams);
                     }
                     break;
                 case FrameOrientation.PEF:
@@ -225,12 +237,22 @@ export class FrameConversions {
                         osvOut = FrameConversions.rotatePefTod(osvOut, this.eopParams.GAST, 
                             this.eopParams.timeStampUt1.getJulian());
                     } else if (target == FrameOrientation.EFI) {
-
+                        osvOut = FrameConversions.rotatePefEfi(osvOut, this.eopParams.polarDx,
+                            this.eopParams.polarDy);
                     }
                     break;
                 case FrameOrientation.EFI:
+                    if (target == FrameOrientation.ENU) {
+                        osvOut = FrameConversions.rotateEfiEnu(osvOut, this.observerPosition);
+                    } else if (target == FrameOrientation.PEF) {
+                        osvOut = FrameConversions.rotateEfiPef(osvOut, this.eopParams.polarDx,
+                            this.eopParams.polarDy);
+                    }
                     break;
                 case FrameOrientation.ENU:
+                    if (target == FrameOrientation.EFI) {
+                        osvOut = FrameConversions.rotateEnuEfi(osvOut, this.observerPosition);
+                    }
                     break;
                 case FrameOrientation.PERI:
                     break;
@@ -281,6 +303,59 @@ export class FrameConversions {
             position : MathUtils.vecSum(osvTopoEfi.position, rEfiEarthPos), 
             velocity : osvTopoEfi.velocity, 
             timeStamp : osvTopoEfi.timeStamp
+        };
+    }
+
+    /**
+     * Rotate OSV from mean equatorial to ecliptic frame.
+     * 
+     * @param {StateVector} osvJ2000Eq 
+     *      Target OSV in the equatorial J2000 frame.
+     * @returns {StateVector} Target OSV in the J2000 ecliptic frame.
+     */
+    static rotateEclEq(osvJ2000Eq : StateVector) : StateVector {
+        // Mean obiquity of the ecliptic at the J2000 epoch.
+        // Since the obliquity is at a specific epoch, it is a constant.
+        // The value is from 2010 version of the Astronomical Almanac p. B52.
+        const eps = 23.439279444444445;
+        const rEq = Rotations.rotateCart1d(osvJ2000Eq.position, -eps);
+
+        // The change in eps is less than arcminute in century. Thus, the influence to the
+        // velocity of objects in the solar system is small.
+        const vEq = Rotations.rotateCart1d(osvJ2000Eq.velocity, -eps);
+
+        return {
+            frameCenter : osvJ2000Eq.frameCenter,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : rEq, 
+            velocity : vEq, 
+            timeStamp : osvJ2000Eq.timeStamp
+        };
+    }
+
+    /**
+     * Rotate OSV from mean equatorial to ecliptic frame.
+     * 
+     * @param {StateVector} osvJ2000Ecl
+     *      Target OSV in the ecliptic J2000 frame.
+     * @returns {StateVector} Target OSV in the J2000 equatorial frame.
+     */
+    static rotateEqEcl(osvJ2000Ecl : StateVector) : StateVector {
+        // Mean obiquity of the ecliptic at the J2000 epoch.
+        // Since the obliquity is at a specific epoch, it is a constant.
+        // The value is from 2010 version of the Astronomical Almanac p. B52.
+        const eps = 23.439279444444445;
+        const rEq = Rotations.rotateCart1d(osvJ2000Ecl.position, eps);
+        // The change in eps is less than arcminute in century. Thus, the influence to the
+        // velocity of objects in the solar system is small.
+        const vEq = Rotations.rotateCart1d(osvJ2000Ecl.velocity, eps);
+
+        return {
+            frameCenter : osvJ2000Ecl.frameCenter,
+            frameOrientation : FrameOrientation.J2000_ECL,
+            position : rEq, 
+            velocity : vEq, 
+            timeStamp : osvJ2000Ecl.timeStamp
         };
     }
 
@@ -372,7 +447,7 @@ export class FrameConversions {
      *      Nutation terms object with fields eps, deps and dpsi.
      * @returns {StateVector} OSV in ToD frame
      */
-    static rotateModTod(osv : StateVector, jtTdb : number, nutData : NutationData) : StateVector
+    static rotateModTod(osv : StateVector, nutData : NutationData) : StateVector
     {
         const rTod = Rotations.rotateCart1d(
                      Rotations.rotateCart3d(
@@ -515,7 +590,7 @@ export class FrameConversions {
      *      Polar motion parameter (in degrees).
      * @returns {StateVector} OSV in EFI frame.
      */
-    static coordPefEfi(osv : StateVector, dx : number, dy : number) : StateVector {
+    static rotatePefEfi(osv : StateVector, dx : number, dy : number) : StateVector {
         const rEfi = Rotations.rotateCart2d(Rotations.rotateCart1d(
             osv.position, -dy), -dx);
         const vEfi = Rotations.rotateCart2d(Rotations.rotateCart1d(
@@ -541,7 +616,7 @@ export class FrameConversions {
      *      Polar motion parameter (in degrees).
      * @returns {StateVector} OSV in PEF frame.
      */
-    static coordEfiPef(osv : StateVector, dx : number, dy : number) : StateVector {
+    static rotateEfiPef(osv : StateVector, dx : number, dy : number) : StateVector {
         const rPef = Rotations.rotateCart1d(Rotations.rotateCart2d(
             osv.position, dx), dy);
         const vPef = Rotations.rotateCart1d(Rotations.rotateCart2d(
@@ -552,6 +627,126 @@ export class FrameConversions {
             frameOrientation : FrameOrientation.PEF,
             position : rPef, 
             velocity : vPef, 
+            timeStamp : osv.timeStamp
+        };
+    }
+
+    /**
+     * Rotate OSV from EFI to the East-North-Up (ENU) frame. Note that the coordinate
+     * center is not translated.
+     * 
+     * @param {StateVector} osv
+     *      OSV in EFI frame.
+     * @param {EarthPosition} earthPos
+     *      Observer position.
+     * @returns {OsvFrame} OSV in ENU frame.
+     */
+    static rotateEfiEnu(osv : StateVector, earthPos : EarthPosition) : StateVector
+    {
+        const rObs = Wgs84.coordWgs84Efi(earthPos);
+        console.log(earthPos.h);
+        const rEnu = Rotations.rotateCart1d(
+                    Rotations.rotateCart3d(
+                    MathUtils.vecDiff(osv.position, rObs), 90 + earthPos.lon), 
+                    90 - earthPos.lat);
+        const vEnu = Rotations.rotateCart1d(
+                    Rotations.rotateCart3d(
+                    osv.velocity, 90 + earthPos.lon), 90 - earthPos.lat);
+
+        return {
+            frameCenter : osv.frameCenter,
+            frameOrientation : FrameOrientation.ENU,
+            position : rEnu, 
+            velocity : vEnu, 
+            timeStamp : osv.timeStamp
+        };
+    }
+   
+    /**
+     * Rotate OSV from the East-North-Up (ENU) to EFI frame. Note that the coordinate
+     * center is not translated.
+     * 
+     * References:
+     * [1] Vallado, Crawford, Hujsak - Revisiting Spacetrack Report #3, 
+     * American Institute of Aeronautics and Astronautics, AIAA 2006-6753,  
+     * 2006.
+     * [2] E. Suirana, J. Zoronoza, M. Hernandez-Pajares - GNSS Data Processing -
+     * Volume I: Fundamentals and Algorithms, ESA 2013.     
+     *  
+     * @param {StateVector} osv
+     *      OSV in ENU frame.
+     * @param {EarthPosition} earthPos
+     *      Observer position.
+     * @returns {OsvFrame} OSV in EFI frame.
+     */
+    static rotateEnuEfi(osv : StateVector, earthPos : EarthPosition) : StateVector
+    {
+        const rObs = Wgs84.coordWgs84Efi(earthPos);
+        const rEfi = MathUtils.vecSum(
+                     Rotations.rotateCart3d(
+                     Rotations.rotateCart1d(osv.position, earthPos.lat - 90), 
+                     -90 - earthPos.lon), rObs);
+        const vEfi = Rotations.rotateCart3d(
+                     Rotations.rotateCart1d(osv.velocity, earthPos.lat - 90), 
+                     -90 - earthPos.lon);
+
+        return {
+            frameCenter : osv.frameCenter,
+            frameOrientation : FrameOrientation.ENU,
+            position : rEfi, 
+            velocity : vEfi, 
+            timeStamp : osv.timeStamp
+        };
+    }
+
+    /**
+     * Rotate OSV from True Equator, Mean Equinox (TEME) frame to the True-of-Date (ToD)
+     * frame.
+     * 
+     * @param {StateVector} osv 
+     *      OSV in TEME frame.
+     * @param {NutationData} nutParams 
+     *      Nutation parameters.
+     * @returns {StateVector} OSV in ToD frame.
+     */
+    static rotateTemeTod(osv : StateVector, nutParams : NutationData) : StateVector {
+        // GAST82 = Eqe82 + GMST82
+        // Eqe82 = GAST82 - GMST82 = nutParams.dpsi * cosd(nutParams.eps)
+        const Eqe82 = nutParams.dpsi * MathUtils.cosd(nutParams.eps); 
+        const rTod = Rotations.rotateCart3d(osv.position, -Eqe82);
+        const vTod = Rotations.rotateCart3d(osv.velocity, -Eqe82);
+
+        return {
+            frameCenter : osv.frameCenter,
+            frameOrientation : FrameOrientation.TOD,
+            position : rTod, 
+            velocity : vTod, 
+            timeStamp : osv.timeStamp
+        };
+    }
+
+    /**
+     * Rotate OSV from True-of-Date (ToD) frame to the True Equator, Mean Equinox (TEME) 
+     * frame.
+     * 
+     * @param {StateVector} osv 
+     *      OSV in ToD frame.
+     * @param {NutationData} nutParams 
+     *      Nutation parameters.
+     * @returns {StateVector} OSV in TEME frame.
+     */
+    static rotateTodTeme(osv : StateVector, nutParams : NutationData) : StateVector {
+        // GAST82 = Eqe82 + GMST82
+        // Eqe82 = GAST82 - GMST82 = nutParams.dpsi * cosd(nutParams.eps)
+        const Eqe82 = nutParams.dpsi * MathUtils.cosd(nutParams.eps); 
+        const rTeme = Rotations.rotateCart3d(osv.position, Eqe82);
+        const vTeme = Rotations.rotateCart3d(osv.velocity, Eqe82);
+
+        return {
+            frameCenter : osv.frameCenter,
+            frameOrientation : FrameOrientation.TOD,
+            position : rTeme, 
+            velocity : vTeme, 
             timeStamp : osv.timeStamp
         };
     }

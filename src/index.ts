@@ -5,5 +5,6 @@ import {MathUtils} from './MathUtils';
 import {StateVector} from './StateVector';
 import { Rotations } from './Rotations';
 import { FrameConversions } from './Frames';
+import { SiderealTime} from './SiderealTime';
 
-export {Angles, MathUtils, StateVector, TimeStamp, TimeCorrelation, Rotations, FrameConversions};
+export {Angles, MathUtils, StateVector, TimeStamp, TimeCorrelation, Rotations, FrameConversions, SiderealTime};
