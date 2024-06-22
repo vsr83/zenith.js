@@ -7,6 +7,7 @@ import { StateVector } from '../src/StateVector';
 import { TimeConvention } from '../src/TimeCorrelation';
 import {AssertionError, strict as assert} from 'assert';
 import { NutationData, Nutation } from '../src/Nutation';
+import { EarthPosition, Wgs84 } from '../src/Wgs84';
 
 describe('Frames', function() {
     it('rotateJ2000Mod', function() {
@@ -617,4 +618,85 @@ describe('Frames', function() {
         checkFloatArray(osvPef_3.velocity, osvPef_3_exp.velocity, 1e-15);
     });    
 
+    it('rotateEfiEnu', function() {
+        const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+            TimeConvention.TIME_UT1, 2459662.467361111);
+        const osvEfiGeo : StateVector = {
+            frameCenter : FrameCenter.CENTER_GEO,
+            frameOrientation : FrameOrientation.EFI,
+            position : [-87838751662.35324,
+                         52736029625.35403,
+                        -25596488029.92342],
+            velocity : [3.815926089266752e+06,
+                6.391070765456880e+06,
+                1.653485602488094e+04],
+            timeStamp : timeStamp
+        };
+        const observerPosition : EarthPosition = {
+            lat : 60.205490,
+            lon : 24.0206,
+            h : 0
+        }
+        const osvEfiHor : StateVector = FrameConversions.translateGeoTopo(osvEfiGeo, observerPosition);
+        const osvEnuHor : StateVector = FrameConversions.rotateEfiEnu(osvEfiHor, observerPosition);
+
+        const osvEnuExp : StateVector = {
+            frameCenter : FrameCenter.CENTER_TOPOC,
+            frameOrientation : FrameOrientation.ENU,
+            position : [ 83925132910.53931,
+                    38278260514.84691,
+                    -51419041065.68192],
+            velocity : [ 4284268.453380695,
+                    -5274201.499041729,
+                    3038946.069965863],
+            timeStamp : timeStamp
+        };
+
+        assert.equal(osvEnuHor.frameCenter, FrameCenter.CENTER_TOPOC);
+        assert.equal(osvEnuHor.frameOrientation, FrameOrientation.ENU);
+        assert.equal(osvEnuHor.timeStamp, osvEnuExp.timeStamp);
+        checkFloatArray(osvEnuHor.position, osvEnuExp.position, 1e-3);
+        checkFloatArray(osvEnuHor.velocity, osvEnuExp.velocity, 1e-3);
+    });
+
+    it('rotateEnuEfi', function() {
+        const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+            TimeConvention.TIME_UT1, 2459662.467361111);
+        const osvEnuTopo : StateVector = {
+            frameCenter : FrameCenter.CENTER_TOPOC,
+            frameOrientation : FrameOrientation.ENU,
+            position : [ 83925132910.53931,
+                         38278260514.84691,
+                        -51419041065.68192],
+            velocity : [ 4284268.453380695,
+                        -5274201.499041729,
+                         3038946.069965863],
+            timeStamp : timeStamp
+        };
+        const observerPosition : EarthPosition = {
+            lat : 60.205490,
+            lon : 24.0206,
+            h : 0
+        }
+        const osvEfiTopo : StateVector = FrameConversions.rotateEnuEfi(osvEnuTopo, observerPosition);
+        const osvEfiGeo  : StateVector = FrameConversions.translateTopoGeo(osvEfiTopo, observerPosition);
+
+        const osvEfiExp : StateVector = {
+            frameCenter : FrameCenter.CENTER_GEO,
+            frameOrientation : FrameOrientation.EFI,
+            position : [-87838751662.35324,
+                         52736029625.35403,
+                        -25596488029.92342],
+            velocity : [3.815926089266752e+06,
+                        6.391070765456880e+06,
+                        1.653485602488094e+04],
+            timeStamp : timeStamp
+        };
+
+        assert.equal(osvEfiGeo.frameCenter, FrameCenter.CENTER_GEO);
+        assert.equal(osvEfiGeo.frameOrientation, FrameOrientation.EFI);
+        assert.equal(osvEfiGeo.timeStamp, osvEfiExp.timeStamp);
+        checkFloatArray(osvEfiGeo.position, osvEfiExp.position, 1e-3);
+        checkFloatArray(osvEfiGeo.velocity, osvEfiExp.velocity, 1e-3);
+    });    
 });

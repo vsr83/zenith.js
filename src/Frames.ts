@@ -298,7 +298,7 @@ export class FrameConversions {
         const rEfiEarthPos = Wgs84.coordWgs84Efi(earthPos);
 
         return {
-            frameCenter : FrameCenter.CENTER_TOPOC,
+            frameCenter : FrameCenter.CENTER_GEO,
             frameOrientation : FrameOrientation.EFI,
             position : MathUtils.vecSum(osvTopoEfi.position, rEfiEarthPos), 
             velocity : osvTopoEfi.velocity, 
@@ -643,11 +643,9 @@ export class FrameConversions {
      */
     static rotateEfiEnu(osv : StateVector, earthPos : EarthPosition) : StateVector
     {
-        const rObs = Wgs84.coordWgs84Efi(earthPos);
-        console.log(earthPos.h);
         const rEnu = Rotations.rotateCart1d(
                     Rotations.rotateCart3d(
-                    MathUtils.vecDiff(osv.position, rObs), 90 + earthPos.lon), 
+                    osv.position, 90 + earthPos.lon), 
                     90 - earthPos.lat);
         const vEnu = Rotations.rotateCart1d(
                     Rotations.rotateCart3d(
@@ -682,10 +680,9 @@ export class FrameConversions {
     static rotateEnuEfi(osv : StateVector, earthPos : EarthPosition) : StateVector
     {
         const rObs = Wgs84.coordWgs84Efi(earthPos);
-        const rEfi = MathUtils.vecSum(
-                     Rotations.rotateCart3d(
+        const rEfi = Rotations.rotateCart3d(
                      Rotations.rotateCart1d(osv.position, earthPos.lat - 90), 
-                     -90 - earthPos.lon), rObs);
+                     -90 - earthPos.lon);
         const vEfi = Rotations.rotateCart3d(
                      Rotations.rotateCart1d(osv.velocity, earthPos.lat - 90), 
                      -90 - earthPos.lon);
