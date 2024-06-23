@@ -8,6 +8,15 @@ import { TimeConvention } from '../src/TimeCorrelation';
 import {AssertionError, strict as assert} from 'assert';
 import { NutationData, Nutation } from '../src/Nutation';
 import { EarthPosition, Wgs84 } from '../src/Wgs84';
+import { EopParams } from '../src/EopParams';
+
+function checkOsv(val : StateVector, exp : StateVector, posTol : number, velTol : number) {
+    assert.equal(val.frameCenter, exp.frameCenter);
+    assert.equal(val.frameOrientation, exp.frameOrientation);
+    assert.equal(val.timeStamp, exp.timeStamp);
+    checkFloatArray(val.position, exp.position, MathUtils.norm(val.position) * posTol);
+    checkFloatArray(val.velocity, exp.velocity, MathUtils.norm(val.velocity) * velTol);
+}
 
 describe('Frames', function() {
     it('rotateJ2000Mod', function() {
@@ -698,5 +707,90 @@ describe('Frames', function() {
         assert.equal(osvEfiGeo.timeStamp, osvEfiExp.timeStamp);
         checkFloatArray(osvEfiGeo.position, osvEfiExp.position, 1e-3);
         checkFloatArray(osvEfiGeo.velocity, osvEfiExp.velocity, 1e-3);
-    });    
+    });
+
+    it('rotateTo', function() {
+        const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+            TimeConvention.TIME_UT1, 2459662.467361111);
+        const observerPosition : EarthPosition = {
+            lat : 60.205490,
+            lon : 24.0206,
+            h : 0
+        }
+        const nutData = Nutation.iau1980(timeStamp.getJulian());
+        const eopParams : EopParams = {
+            timeStampTdb : timeStamp,
+            timeStampUt1 : timeStamp,
+            polarDx : 0.1,
+            polarDy : 0.2,
+            nutationParams : nutData,
+            GMST : SiderealTime.timeGmst(timeStamp.getJulian(), timeStamp.getJulian()),
+            GAST : SiderealTime.timeGast(timeStamp.getJulian(), timeStamp.getJulian(), nutData)
+        };
+    
+        const osvJ2000EclExp : StateVector = {
+            frameCenter : FrameCenter.CENTER_GEO,
+            frameOrientation : FrameOrientation.J2000_ECL,
+            position : [1.0e12, 2.0e12, 3.0e12],
+            velocity : [4.0e5, 5.0e5, 6.0e5],
+            timeStamp : timeStamp
+        };
+        const osvJ2000EqExp = FrameConversions.rotateEclEq(osvJ2000EclExp);
+        const osvModExp = FrameConversions.rotateJ2000Mod(osvJ2000EqExp, eopParams.timeStampTdb.getJulian());
+        const osvTodExp = FrameConversions.rotateModTod(osvModExp, eopParams.nutationParams);
+        const osvTemeExp = FrameConversions.rotateTodTeme(osvTodExp, eopParams.nutationParams);
+        const osvPefExp = FrameConversions.rotateTodPef(osvTodExp, eopParams.GAST, eopParams.timeStampUt1.getJulian());
+        const osvEfiExp = FrameConversions.rotatePefEfi(osvPefExp, eopParams.polarDx, eopParams.polarDy);
+        const osvEnuExp = FrameConversions.rotateEfiEnu(osvEfiExp, observerPosition);
+
+        const frameConversions : FrameConversions = new FrameConversions(eopParams);
+        frameConversions.setObserverPosition(observerPosition);
+        const osvEq  = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.J2000_EQ);
+        const osvMod = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.MOD);
+        const osvTod = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.TOD);
+        const osvPef = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.PEF);
+        const osvEfi = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.EFI);
+        const osvEnu = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.ENU);
+
+        checkOsv(osvEq,  osvJ2000EqExp, 1e-15, 1e-15);
+        checkOsv(osvMod, osvModExp, 1e-15, 1e-15);
+        checkOsv(osvTod, osvTodExp, 1e-15, 1e-15);
+        checkOsv(osvPef, osvPefExp, 1e-15, 1e-15);
+        checkOsv(osvEfi, osvEfiExp, 1e-15, 1e-15);
+        checkOsv(osvEnu, osvEnuExp, 1e-15, 1e-15);
+
+        const frames : FrameOrientation[] = [
+            FrameOrientation.J2000_ECL,
+            FrameOrientation.J2000_EQ,
+            FrameOrientation.MOD,
+            FrameOrientation.TOD,
+            FrameOrientation.TEME,
+            FrameOrientation.PEF,
+            FrameOrientation.EFI,
+            FrameOrientation.ENU
+        ];
+        const osvList : StateVector[] = [
+            osvJ2000EclExp,
+            osvJ2000EqExp,
+            osvModExp,
+            osvTodExp,
+            osvTemeExp,
+            osvPefExp,
+            osvEfiExp,
+            osvEnuExp
+        ];
+
+        for (let indSource = 0; indSource < frames.length; indSource++) {
+            const source : StateVector = osvList[indSource];
+            
+            for (let indTarget = frames.length - 1; indTarget >=0; indTarget--) {
+                const target : StateVector = osvList[indTarget];
+
+                const osv = frameConversions.rotateTo(source, frames[indTarget]);
+                
+                checkOsv(osv, target, 1e-8, 1e-8);
+            }
+        }
+    });
+
 });

@@ -102,6 +102,17 @@ transToD.set(FrameOrientation.EFI,       mainSequence.slice(4, 6));
 transToD.set(FrameOrientation.ENU,       mainSequence.slice(4, 7));
 transToD.set(FrameOrientation.TEME,      [FrameOrientation.TEME]);
 
+const transTeme : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+transMap.set(FrameOrientation.TEME, transTeme);
+transTeme.set(FrameOrientation.J2000_ECL, [FrameOrientation.TOD].concat(mainSequence.slice(0, 3).reverse()));
+transTeme.set(FrameOrientation.J2000_EQ,  [FrameOrientation.TOD].concat(mainSequence.slice(1, 3).reverse()));
+transTeme.set(FrameOrientation.MOD,       [FrameOrientation.TOD].concat(mainSequence.slice(2, 3).reverse()));
+transTeme.set(FrameOrientation.TOD,       [FrameOrientation.TOD]);
+transTeme.set(FrameOrientation.PEF,       [FrameOrientation.TOD].concat(mainSequence.slice(4, 5)));
+transTeme.set(FrameOrientation.EFI,       [FrameOrientation.TOD].concat(mainSequence.slice(4, 6)));
+transTeme.set(FrameOrientation.ENU,       [FrameOrientation.TOD].concat(mainSequence.slice(4, 7)));
+transTeme.set(FrameOrientation.TEME,      []);
+
 const transPef : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
 transMap.set(FrameOrientation.PEF, transPef);
 transPef.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 4).reverse());
@@ -134,11 +145,6 @@ transEnu.set(FrameOrientation.PEF,       mainSequence.slice(4, 6).reverse());
 transEnu.set(FrameOrientation.EFI,       mainSequence.slice(5, 6).reverse());
 transEnu.set(FrameOrientation.ENU,       []);
 transEnu.set(FrameOrientation.TEME,      mainSequence.slice(3, 6).reverse().concat([FrameOrientation.TEME]));
-
-console.log(transMap);
-console.log(transMap.get(FrameOrientation.J2000_EQ));
-console.log(transMap.get(FrameOrientation.J2000_EQ)?.get(FrameOrientation.TOD));
-
 
 /**
  * Class implementing conversion between frames via translations and rotations.
@@ -198,11 +204,12 @@ export class FrameConversions {
                     break;
                 case FrameOrientation.J2000_ECL:
                     if (target == FrameOrientation.J2000_EQ) {
+                        osvOut = FrameConversions.rotateEclEq(osvOut);
                     } 
                     break;
                 case FrameOrientation.J2000_EQ:
                     if (target == FrameOrientation.J2000_ECL) {
-
+                        osvOut = FrameConversions.rotateEqEcl(osvOut);
                     } else if (target == FrameOrientation.MOD) {
                         osvOut = FrameConversions.rotateJ2000Mod(osvOut, 
                             this.eopParams.timeStampTdb.getJulian());
@@ -257,7 +264,6 @@ export class FrameConversions {
                 case FrameOrientation.PERI:
                     break;
             }
-
             source = target;
         }
 
@@ -514,7 +520,7 @@ export class FrameConversions {
     static rotateTodPef(osv : StateVector, GAST : number, jtUt1 : number) : StateVector
     {
         const rPef = Rotations.rotateCart3d(osv.position, GAST);
-        const vPef = Rotations.rotateCart3d(osv.position, GAST);
+        const vPef = Rotations.rotateCart3d(osv.velocity, GAST);
 
         // Alternative expression for the GMST is \sum_{i=0}^3 k_i MJD^i.
         const k1 = 360.985647366;
@@ -689,7 +695,7 @@ export class FrameConversions {
 
         return {
             frameCenter : osv.frameCenter,
-            frameOrientation : FrameOrientation.ENU,
+            frameOrientation : FrameOrientation.EFI,
             position : rEfi, 
             velocity : vEfi, 
             timeStamp : osv.timeStamp
@@ -741,7 +747,7 @@ export class FrameConversions {
 
         return {
             frameCenter : osv.frameCenter,
-            frameOrientation : FrameOrientation.TOD,
+            frameOrientation : FrameOrientation.TEME,
             position : rTeme, 
             velocity : vTeme, 
             timeStamp : osv.timeStamp
