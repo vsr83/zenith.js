@@ -30,23 +30,76 @@ export enum FrameOrientation {
  */
 export enum FrameCenter {
     // Heliocenter
-    CENTER_HELIO,
+    CENTER_HELIO = 'HELIO',
     // Solar System Barycenter.
-    CENTER_SSB, 
+    CENTER_SSB = 'SSB', 
     // Geocenter.
-    CENTER_GEO,
+    CENTER_GEO = 'GEO',
     // Earth-Moon Barycenter.
-    CENTER_EMB,
+    CENTER_EMB = 'EMB',
     // Topocentric.
-    CENTER_TOPOC
+    CENTER_TOPOC = 'TOPOC'
 }
+
+const transMap : Map<FrameCenter, Map<FrameCenter, FrameCenter[]>> = 
+             new Map<FrameCenter, Map<FrameCenter, FrameCenter[]>>();
+const mainTransSeq : FrameCenter[] = [
+    FrameCenter.CENTER_SSB,
+    FrameCenter.CENTER_HELIO,
+    FrameCenter.CENTER_EMB,
+    FrameCenter.CENTER_GEO,
+    FrameCenter.CENTER_TOPOC
+];
+
+const transSsb   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
+transMap.set(FrameCenter.CENTER_SSB, transSsb);
+transSsb.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(1, 1));
+transSsb.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 2));
+transSsb.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(1, 3));
+transSsb.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(1, 4));
+transSsb.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(1, 5));
+
+const transHelio : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
+transMap.set(FrameCenter.CENTER_HELIO, transHelio);
+transHelio.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 1).reverse());
+transHelio.set(FrameCenter.CENTER_HELIO, []);
+transHelio.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(1, 2).reverse());
+transHelio.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(1, 3).reverse());
+transHelio.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(1, 4).reverse());
+
+const transEmb   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
+transMap.set(FrameCenter.CENTER_EMB, transEmb);
+transEmb.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 2).reverse());
+transEmb.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 2).reverse());
+transEmb.set(FrameCenter.CENTER_EMB,   []);
+transEmb.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(3, 4));
+transEmb.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(3, 5));
+
+const transGeo   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
+transMap.set(FrameCenter.CENTER_GEO, transGeo);
+transGeo.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 3).reverse());
+transGeo.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 3).reverse());
+transGeo.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(2, 3).reverse());
+transGeo.set(FrameCenter.CENTER_GEO,   []);
+transGeo.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(4, 5));
+
+const transTopo  : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
+transMap.set(FrameCenter.CENTER_TOPOC, transTopo);
+transTopo.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 4).reverse());
+transTopo.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 4).reverse());
+transTopo.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(2, 4).reverse());
+transTopo.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(3, 4).reverse());
+transTopo.set(FrameCenter.CENTER_TOPOC, []);
+
+console.log(transMap);
 
 /**
  * Map associating time stamp to different conventions.
  */
-const transMap : Map<FrameOrientation, Map<FrameOrientation, FrameOrientation[]>> = new Map<FrameOrientation, Map<FrameOrientation, FrameOrientation[]>>();
+const rotateMap : Map<FrameOrientation, Map<FrameOrientation, FrameOrientation[]>> = 
+              new Map<FrameOrientation, Map<FrameOrientation, FrameOrientation[]>>();
 
-const mainSequence : FrameOrientation[] = [
+const mainRotSeq : FrameOrientation[] = [
     FrameOrientation.J2000_ECL,
     FrameOrientation.J2000_EQ,
     FrameOrientation.MOD,
@@ -57,94 +110,94 @@ const mainSequence : FrameOrientation[] = [
 ];
 
 
-const transJ2000Ecl : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.J2000_ECL, transJ2000Ecl);
-transJ2000Ecl.set(FrameOrientation.J2000_ECL, []);
-transJ2000Ecl.set(FrameOrientation.J2000_EQ,  mainSequence.slice(1, 2));
-transJ2000Ecl.set(FrameOrientation.MOD,       mainSequence.slice(1, 3));
-transJ2000Ecl.set(FrameOrientation.TOD,       mainSequence.slice(1, 4));
-transJ2000Ecl.set(FrameOrientation.PEF,       mainSequence.slice(1, 5));
-transJ2000Ecl.set(FrameOrientation.EFI,       mainSequence.slice(1, 6));
-transJ2000Ecl.set(FrameOrientation.ENU,       mainSequence.slice(1, 7));
-transJ2000Ecl.set(FrameOrientation.TEME,      mainSequence.slice(1, 4).concat([FrameOrientation.TEME]));
+const rotJ2000Ecl : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.J2000_ECL, rotJ2000Ecl);
+rotJ2000Ecl.set(FrameOrientation.J2000_ECL, []);
+rotJ2000Ecl.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 2));
+rotJ2000Ecl.set(FrameOrientation.MOD,       mainRotSeq.slice(1, 3));
+rotJ2000Ecl.set(FrameOrientation.TOD,       mainRotSeq.slice(1, 4));
+rotJ2000Ecl.set(FrameOrientation.PEF,       mainRotSeq.slice(1, 5));
+rotJ2000Ecl.set(FrameOrientation.EFI,       mainRotSeq.slice(1, 6));
+rotJ2000Ecl.set(FrameOrientation.ENU,       mainRotSeq.slice(1, 7));
+rotJ2000Ecl.set(FrameOrientation.TEME,      mainRotSeq.slice(1, 4).concat([FrameOrientation.TEME]));
 
 
-const transJ2000 : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.J2000_EQ, transJ2000);
-transJ2000.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 1));
-transJ2000.set(FrameOrientation.J2000_EQ,  []);
-transJ2000.set(FrameOrientation.MOD,       mainSequence.slice(2, 3));
-transJ2000.set(FrameOrientation.TOD,       mainSequence.slice(2, 4));
-transJ2000.set(FrameOrientation.PEF,       mainSequence.slice(2, 5));
-transJ2000.set(FrameOrientation.EFI,       mainSequence.slice(2, 6));
-transJ2000.set(FrameOrientation.ENU,       mainSequence.slice(2, 7));
-transJ2000.set(FrameOrientation.TEME,      mainSequence.slice(2, 4).concat([FrameOrientation.TEME]));
+const rotJ2000 : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.J2000_EQ, rotJ2000);
+rotJ2000.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 1));
+rotJ2000.set(FrameOrientation.J2000_EQ,  []);
+rotJ2000.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 3));
+rotJ2000.set(FrameOrientation.TOD,       mainRotSeq.slice(2, 4));
+rotJ2000.set(FrameOrientation.PEF,       mainRotSeq.slice(2, 5));
+rotJ2000.set(FrameOrientation.EFI,       mainRotSeq.slice(2, 6));
+rotJ2000.set(FrameOrientation.ENU,       mainRotSeq.slice(2, 7));
+rotJ2000.set(FrameOrientation.TEME,      mainRotSeq.slice(2, 4).concat([FrameOrientation.TEME]));
 
-const transMoD : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.MOD, transMoD);
-transMoD.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 2).reverse());
-transMoD.set(FrameOrientation.J2000_EQ,  mainSequence.slice(1, 2).reverse());
-transMoD.set(FrameOrientation.MOD,       []);
-transMoD.set(FrameOrientation.TOD,       mainSequence.slice(3, 4));
-transMoD.set(FrameOrientation.PEF,       mainSequence.slice(3, 5));
-transMoD.set(FrameOrientation.EFI,       mainSequence.slice(3, 6));
-transMoD.set(FrameOrientation.ENU,       mainSequence.slice(3, 7));
-transMoD.set(FrameOrientation.TEME,      mainSequence.slice(3, 4).concat([FrameOrientation.TEME]));
+const rotMoD : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.MOD, rotMoD);
+rotMoD.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 2).reverse());
+rotMoD.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 2).reverse());
+rotMoD.set(FrameOrientation.MOD,       []);
+rotMoD.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 4));
+rotMoD.set(FrameOrientation.PEF,       mainRotSeq.slice(3, 5));
+rotMoD.set(FrameOrientation.EFI,       mainRotSeq.slice(3, 6));
+rotMoD.set(FrameOrientation.ENU,       mainRotSeq.slice(3, 7));
+rotMoD.set(FrameOrientation.TEME,      mainRotSeq.slice(3, 4).concat([FrameOrientation.TEME]));
 
-const transToD : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.TOD, transToD);
-transToD.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 3).reverse());
-transToD.set(FrameOrientation.J2000_EQ,  mainSequence.slice(1, 3).reverse());
-transToD.set(FrameOrientation.MOD,       mainSequence.slice(2, 3).reverse());
-transToD.set(FrameOrientation.TOD,       []);
-transToD.set(FrameOrientation.PEF,       mainSequence.slice(4, 5));
-transToD.set(FrameOrientation.EFI,       mainSequence.slice(4, 6));
-transToD.set(FrameOrientation.ENU,       mainSequence.slice(4, 7));
-transToD.set(FrameOrientation.TEME,      [FrameOrientation.TEME]);
+const rotToD : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.TOD, rotToD);
+rotToD.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 3).reverse());
+rotToD.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 3).reverse());
+rotToD.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 3).reverse());
+rotToD.set(FrameOrientation.TOD,       []);
+rotToD.set(FrameOrientation.PEF,       mainRotSeq.slice(4, 5));
+rotToD.set(FrameOrientation.EFI,       mainRotSeq.slice(4, 6));
+rotToD.set(FrameOrientation.ENU,       mainRotSeq.slice(4, 7));
+rotToD.set(FrameOrientation.TEME,      [FrameOrientation.TEME]);
 
-const transTeme : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.TEME, transTeme);
-transTeme.set(FrameOrientation.J2000_ECL, [FrameOrientation.TOD].concat(mainSequence.slice(0, 3).reverse()));
-transTeme.set(FrameOrientation.J2000_EQ,  [FrameOrientation.TOD].concat(mainSequence.slice(1, 3).reverse()));
-transTeme.set(FrameOrientation.MOD,       [FrameOrientation.TOD].concat(mainSequence.slice(2, 3).reverse()));
-transTeme.set(FrameOrientation.TOD,       [FrameOrientation.TOD]);
-transTeme.set(FrameOrientation.PEF,       [FrameOrientation.TOD].concat(mainSequence.slice(4, 5)));
-transTeme.set(FrameOrientation.EFI,       [FrameOrientation.TOD].concat(mainSequence.slice(4, 6)));
-transTeme.set(FrameOrientation.ENU,       [FrameOrientation.TOD].concat(mainSequence.slice(4, 7)));
-transTeme.set(FrameOrientation.TEME,      []);
+const rotTeme : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.TEME, rotTeme);
+rotTeme.set(FrameOrientation.J2000_ECL, [FrameOrientation.TOD].concat(mainRotSeq.slice(0, 3).reverse()));
+rotTeme.set(FrameOrientation.J2000_EQ,  [FrameOrientation.TOD].concat(mainRotSeq.slice(1, 3).reverse()));
+rotTeme.set(FrameOrientation.MOD,       [FrameOrientation.TOD].concat(mainRotSeq.slice(2, 3).reverse()));
+rotTeme.set(FrameOrientation.TOD,       [FrameOrientation.TOD]);
+rotTeme.set(FrameOrientation.PEF,       [FrameOrientation.TOD].concat(mainRotSeq.slice(4, 5)));
+rotTeme.set(FrameOrientation.EFI,       [FrameOrientation.TOD].concat(mainRotSeq.slice(4, 6)));
+rotTeme.set(FrameOrientation.ENU,       [FrameOrientation.TOD].concat(mainRotSeq.slice(4, 7)));
+rotTeme.set(FrameOrientation.TEME,      []);
 
-const transPef : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.PEF, transPef);
-transPef.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 4).reverse());
-transPef.set(FrameOrientation.J2000_EQ,  mainSequence.slice(1, 4).reverse());
-transPef.set(FrameOrientation.MOD,       mainSequence.slice(2, 4).reverse());
-transPef.set(FrameOrientation.TOD,       mainSequence.slice(3, 4).reverse());
-transPef.set(FrameOrientation.PEF,       []);
-transPef.set(FrameOrientation.EFI,       mainSequence.slice(5, 6));
-transPef.set(FrameOrientation.ENU,       mainSequence.slice(5, 7));
-transPef.set(FrameOrientation.TEME,      mainSequence.slice(3, 4).reverse().concat([FrameOrientation.TEME]));
+const rotPef : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.PEF, rotPef);
+rotPef.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 4).reverse());
+rotPef.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 4).reverse());
+rotPef.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 4).reverse());
+rotPef.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 4).reverse());
+rotPef.set(FrameOrientation.PEF,       []);
+rotPef.set(FrameOrientation.EFI,       mainRotSeq.slice(5, 6));
+rotPef.set(FrameOrientation.ENU,       mainRotSeq.slice(5, 7));
+rotPef.set(FrameOrientation.TEME,      mainRotSeq.slice(3, 4).reverse().concat([FrameOrientation.TEME]));
 
-const transEfi : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.EFI, transEfi);
-transEfi.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 5).reverse());
-transEfi.set(FrameOrientation.J2000_EQ,  mainSequence.slice(1, 5).reverse());
-transEfi.set(FrameOrientation.MOD,       mainSequence.slice(2, 5).reverse());
-transEfi.set(FrameOrientation.TOD,       mainSequence.slice(3, 5).reverse());
-transEfi.set(FrameOrientation.PEF,       mainSequence.slice(4, 5).reverse());
-transEfi.set(FrameOrientation.EFI,       []);
-transEfi.set(FrameOrientation.ENU,       mainSequence.slice(6, 7));
-transEfi.set(FrameOrientation.TEME,      mainSequence.slice(3, 5).reverse().concat([FrameOrientation.TEME]));
+const rotEfi : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.EFI, rotEfi);
+rotEfi.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 5).reverse());
+rotEfi.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 5).reverse());
+rotEfi.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 5).reverse());
+rotEfi.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 5).reverse());
+rotEfi.set(FrameOrientation.PEF,       mainRotSeq.slice(4, 5).reverse());
+rotEfi.set(FrameOrientation.EFI,       []);
+rotEfi.set(FrameOrientation.ENU,       mainRotSeq.slice(6, 7));
+rotEfi.set(FrameOrientation.TEME,      mainRotSeq.slice(3, 5).reverse().concat([FrameOrientation.TEME]));
 
-const transEnu : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
-transMap.set(FrameOrientation.ENU, transEnu);
-transEnu.set(FrameOrientation.J2000_ECL, mainSequence.slice(0, 6).reverse());
-transEnu.set(FrameOrientation.J2000_EQ,  mainSequence.slice(1, 6).reverse());
-transEnu.set(FrameOrientation.MOD,       mainSequence.slice(2, 6).reverse());
-transEnu.set(FrameOrientation.TOD,       mainSequence.slice(3, 6).reverse());
-transEnu.set(FrameOrientation.PEF,       mainSequence.slice(4, 6).reverse());
-transEnu.set(FrameOrientation.EFI,       mainSequence.slice(5, 6).reverse());
-transEnu.set(FrameOrientation.ENU,       []);
-transEnu.set(FrameOrientation.TEME,      mainSequence.slice(3, 6).reverse().concat([FrameOrientation.TEME]));
+const rotEnu : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.ENU, rotEnu);
+rotEnu.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 6).reverse());
+rotEnu.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 6).reverse());
+rotEnu.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 6).reverse());
+rotEnu.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 6).reverse());
+rotEnu.set(FrameOrientation.PEF,       mainRotSeq.slice(4, 6).reverse());
+rotEnu.set(FrameOrientation.EFI,       mainRotSeq.slice(5, 6).reverse());
+rotEnu.set(FrameOrientation.ENU,       []);
+rotEnu.set(FrameOrientation.TEME,      mainRotSeq.slice(3, 6).reverse().concat([FrameOrientation.TEME]));
 
 /**
  * Class implementing conversion between frames via translations and rotations.
@@ -161,9 +214,12 @@ export class FrameConversions {
      * 
      * @param {EopParams} eopParams 
      *      Earth orientation parameters used for transformations.
+     * @param {EarthPosition} observerPosition 
+     *      Observer position.
      */
-    public constructor(eopParams : EopParams) {
+    public constructor(eopParams : EopParams, observerPosition : EarthPosition) {
         this.eopParams = eopParams;
+        this.observerPosition = observerPosition;
     }
 
     /**
@@ -174,6 +230,56 @@ export class FrameConversions {
      */
     public setObserverPosition(observerPosition : EarthPosition) {
         this.observerPosition = observerPosition;
+    }
+
+    public translateTo(osvIn : StateVector, targetCenter : FrameCenter) {
+        const sourceCenter : FrameCenter = osvIn.frameCenter;
+        const sequence : FrameCenter[] = <FrameCenter[]> transMap.get(sourceCenter)?.get(targetCenter);
+        let osvOut : StateVector = osvIn;
+
+        for (let indTrans = 0; indTrans < sequence.length; indTrans++) {
+            const target : FrameCenter = sequence[indTrans];
+
+            switch(sourceCenter) {
+                case FrameCenter.CENTER_SSB:
+                    if (target == FrameCenter.CENTER_HELIO) {
+
+                    }
+                    break;
+                case FrameCenter.CENTER_HELIO:
+                    if (target == FrameCenter.CENTER_SSB) {
+                        
+                    } else if (target == FrameCenter.CENTER_EMB) {
+                        
+                    }
+                    break;
+                case FrameCenter.CENTER_EMB:
+                    if (target == FrameCenter.CENTER_HELIO) {
+                        
+                    } else if (target == FrameCenter.CENTER_GEO) {
+                        
+                    }
+                    break;
+                case FrameCenter.CENTER_GEO:
+                    if (target == FrameCenter.CENTER_EMB) {
+                        
+                    } else if (target == FrameCenter.CENTER_TOPOC) {
+                        const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
+                        osvOut = FrameConversions.translateGeoTopoEfi(osvOut, this.observerPosition);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);
+                    }
+                    break;
+                case FrameCenter.CENTER_TOPOC:
+                    if (target == FrameCenter.CENTER_GEO) {
+                        const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
+                        osvOut = FrameConversions.translateTopoGeoEfi(osvOut, this.observerPosition);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);                        
+                    } 
+                    break;
+            }
+        }
     }
     
     /**
@@ -189,7 +295,7 @@ export class FrameConversions {
      */
     public rotateTo(osvIn : StateVector, targetFrame : FrameOrientation) : StateVector {
         const sourceFrame : FrameOrientation = osvIn.frameOrientation;
-        const sequence : FrameOrientation[] = <FrameOrientation[]> transMap.get(sourceFrame)?.get(targetFrame);
+        const sequence : FrameOrientation[] = <FrameOrientation[]> rotateMap.get(sourceFrame)?.get(targetFrame);
 
         let source : FrameOrientation = sourceFrame;
         let osvOut : StateVector = osvIn;
@@ -279,7 +385,7 @@ export class FrameConversions {
      *      Topocentric Earth position translated to.
      * @returns {StateVector} Target OSV in the topocentric EFI frame.
      */
-    static translateGeoTopo(osvGeoEfi : StateVector, earthPos : EarthPosition) : StateVector {
+    static translateGeoTopoEfi(osvGeoEfi : StateVector, earthPos : EarthPosition) : StateVector {
         const rEfiEarthPos = Wgs84.coordWgs84Efi(earthPos);
 
         return {
@@ -300,7 +406,7 @@ export class FrameConversions {
      *      Topocentric Earth position translated to.
      * @returns {StateVector} Target OSV in the geocentric EFI frame.
      */
-    static translateTopoGeo(osvTopoEfi : StateVector, earthPos : EarthPosition) : StateVector {
+    static translateTopoGeoEfi(osvTopoEfi : StateVector, earthPos : EarthPosition) : StateVector {
         const rEfiEarthPos = Wgs84.coordWgs84Efi(earthPos);
 
         return {

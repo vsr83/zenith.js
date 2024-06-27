@@ -646,7 +646,7 @@ describe('Frames', function() {
             lon : 24.0206,
             h : 0
         }
-        const osvEfiHor : StateVector = FrameConversions.translateGeoTopo(osvEfiGeo, observerPosition);
+        const osvEfiHor : StateVector = FrameConversions.translateGeoTopoEfi(osvEfiGeo, observerPosition);
         const osvEnuHor : StateVector = FrameConversions.rotateEfiEnu(osvEfiHor, observerPosition);
 
         const osvEnuExp : StateVector = {
@@ -688,7 +688,7 @@ describe('Frames', function() {
             h : 0
         }
         const osvEfiTopo : StateVector = FrameConversions.rotateEnuEfi(osvEnuTopo, observerPosition);
-        const osvEfiGeo  : StateVector = FrameConversions.translateTopoGeo(osvEfiTopo, observerPosition);
+        const osvEfiGeo  : StateVector = FrameConversions.translateTopoGeoEfi(osvEfiTopo, observerPosition);
 
         const osvEfiExp : StateVector = {
             frameCenter : FrameCenter.CENTER_GEO,
@@ -743,7 +743,7 @@ describe('Frames', function() {
         const osvEfiExp = FrameConversions.rotatePefEfi(osvPefExp, eopParams.polarDx, eopParams.polarDy);
         const osvEnuExp = FrameConversions.rotateEfiEnu(osvEfiExp, observerPosition);
 
-        const frameConversions : FrameConversions = new FrameConversions(eopParams);
+        const frameConversions : FrameConversions = new FrameConversions(eopParams, observerPosition);
         frameConversions.setObserverPosition(observerPosition);
         const osvEq  = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.J2000_EQ);
         const osvMod = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.MOD);
