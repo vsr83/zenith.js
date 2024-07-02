@@ -1,5 +1,5 @@
 import { TimeConvention } from "../TimeCorrelation";
-import { GregorianTime } from "../TimeStamp";
+import { GregorianTime } from "../GregorianTime";
 
 /**
  * Time parameters mode.
@@ -134,10 +134,11 @@ export class TimeParameters {
     static convertToList(info : TimeParametersInfo) : TimeParametersInfo {
         switch (info.mode) {
             case TimeParamsMode.SPAN_MJD:
-
+                return TimeParameters.convertMjdSpanToList(info);
             case TimeParamsMode.SPAN_JULIAN:
-
+                return TimeParameters.convertJulianSpanToList(info);
             case TimeParamsMode.SPAN_GREGORIAN:
+                return TimeParameters.convertGregSpanToList(info);
             case TimeParamsMode.LIST_MJD:
                 return info;
             case TimeParamsMode.LIST_JULIAN:
@@ -217,160 +218,40 @@ export class TimeParameters {
             throw Error("Necessary parameters undefined.");
         }
 
-        function addYears(gregTime : GregorianTime, numYears : number) {
-            gregTime.year += numYears;
-        }
-
-        function addMonths(gregTime : GregorianTime, numMonths : number) {
-            const numYears = Math.floor((gregTime.month + numMonths + 1) / 12);
-            numMonths -= numYears * 12;
-
-            addYears(gregTime, numYears);
-            gregTime.month 
-        }
-
-        function isLeap(gregTime : GregorianTime) {
-            if (gregTime.year % 4 == 0) {
-                if (gregTime.year % 100 == 0 && gregTime.year % 400 != 0) {
-                    return false;
-                }  else {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function addDays(gregTime : GregorianTime, numDays : number) {
-            //                           1   2   3   4   5   6   7   8   9  10  11  12    
-            const numDaysPerMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-            while (numDays > 0) {
-                const year = gregTime.year;
-                let daysInCurrentMonth = numDaysPerMonth[gregTime.month];
-                if (gregTime.month == 2 && isLeap(gregTime)) {
-                    daysInCurrentMonth++;
-                }
-
-                if (numDays >= daysInCurrentMonth) {
-                    addMonths(gregTime, 1);
-                    numDays -= daysInCurrentMonth;
-                } else {
-                    gregTime.mday += numDays;
-                    numDays = 0;
-                }
-            }
-        }
-
-        function addHours(gregTime : GregorianTime, numHours : number) {
-            const numDays = Math.floor((gregTime.hour + numHours) / 24);
-            numHours -= numDays * 24;
-
-            addDays(gregTime, numDays);
-            gregTime.hour += numHours;
-        }
-
-        function addMinutes(gregTime : GregorianTime, numMinutes : number) {
-            const numHours = Math.floor((gregTime.minute + numMinutes) / 60);
-            numMinutes -= numHours * 60;
-
-            addHours(gregTime, numHours);
-            gregTime.minute += numMinutes;
-        }
-
-        function addSeconds(gregTime : GregorianTime, numSeconds : number) {
-            const numMinutes = Math.floor((gregTime.second + numSeconds) / 60);
-            numSeconds -= numMinutes * 60;
-
-            addMinutes(gregTime, numMinutes);
-            gregTime.second += numSeconds;
-        }
-
-        function addMillis(gregTime : GregorianTime, numMillis : number) {
-            const numSeconds = Math.floor(numMillis / 1000);
-            numMillis -= numSeconds * 1000;
-
-            addSeconds(gregTime, numSeconds);
-            gregTime.second += numMillis / 1000.0;
-        }
-
-        function isAfter(source : GregorianTime, target : GregorianTime) {
-            if (source.year > target.year) {
-                return true;
-            } else if (source.year < target.year) {
-                return false;
-            }
-
-            // source.year == target.year
-            if (source.month > target.month) {
-                return true;
-            } else if (source.month < target.month) {
-                return false;
-            }
-
-            // source.month == target.month
-            if (source.mday > target.mday) {
-                return true;
-            } else if (source.mday < target.mday) {
-                return false;
-            }
-
-            // source.mday == target.mday
-            if (source.hour > target.hour) {
-                return true;
-            } else if (source.hour < target.hour) {
-                return false;
-            }
-
-            // source.hour == target.hour
-            if (source.minute > target.minute) {
-                return true;
-            } else if (source.minute < target.minute) {
-                return false;
-            }
-
-            // source.minute == target.minute
-            if (source.second > target.second) {
-                return true;
-            } else if (source.second < target.second) {
-                return false;
-            }
-        }
-
         let gregTime : GregorianTime = info.spanStartGregorian;
         let gregList : GregorianTime[] = [];
 
         for (;;) {
-
-            if (isAfter(gregTime, info.spanStartGregorian)) {
+            if (gregTime.isAfter(info.spanEndGregorian)) {
                 break;
             }
             gregList.push(gregTime);
 
             switch (info.timeStepGregorianUnits) {
                 case GregorianUnits.YEAR:
-                    addYears(gregTime, info.timeStepGregorian);
+                    gregTime.addYears(info.timeStepGregorian);
                     break;
                 case GregorianUnits.MONTH:
-                    addMonths(gregTime, info.timeStepGregorian);
+                    gregTime.addMonths(info.timeStepGregorian);
                     break;
                 case GregorianUnits.DAY:
-                    addDays(gregTime, info.timeStepGregorian);
+                    gregTime.addDays(info.timeStepGregorian);
                     break;
                 case GregorianUnits.HOUR:
-                    addHours(gregTime, info.timeStepGregorian);
+                    gregTime.addHours(info.timeStepGregorian);
                     break;
                 case GregorianUnits.MINUTE:
-                    addMinutes(gregTime, info.timeStepGregorian);
+                    gregTime.addMinutes(info.timeStepGregorian);
                     break;
                 case GregorianUnits.SECOND:
-                    addSeconds(gregTime, info.timeStepGregorian);
+                    gregTime.addSeconds(info.timeStepGregorian);
                     break;
                 case GregorianUnits.MILLI:
-                    addMillis(gregTime, info.timeStepGregorian);
+                    gregTime.addMillis(info.timeStepGregorian);
                     break;
             }
         }
-        
+
         return {
             mode : TimeParamsMode.LIST_GREGORIAN,
             convention : info.convention,

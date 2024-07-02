@@ -1,5 +1,5 @@
 import { TimeConvention, TimeCorrelation } from "./TimeCorrelation";
-
+import { GregorianTime } from "./GregorianTime";
 /**
  * Time format.
  */
@@ -11,7 +11,7 @@ export enum TimeFormat {
 /**
  * Interface for GregorianTime outputs.
  */
-export interface GregorianTime 
+/*export interface GregorianTime 
 {
     year : number;
     month : number; 
@@ -19,7 +19,7 @@ export interface GregorianTime
     hour : number;
     minute : number; 
     second : number;
-}
+}*/
 
 /**
  * Class for storing time stamps.
@@ -153,14 +153,14 @@ export class TimeStamp {
      * @returns {TimeStamp} Timestamp.
      */
     public fromTimestamp(date : Date, convention : TimeConvention) {
-        const gregTime : GregorianTime = {
-            year : date.getUTCFullYear(),
-            month : date.getUTCMonth() + 1,
-            mday : date.getUTCDate(),
-            hour : date.getUTCHours(),
-            minute : date.getUTCMinutes(),
-            second : date.getUTCSeconds() + date.getUTCMilliseconds() / 1000.0
-        }
+        const gregTime : GregorianTime = new GregorianTime(
+            date.getUTCFullYear(),
+            date.getUTCMonth() + 1,
+            date.getUTCDate(),
+            date.getUTCHours(),
+            date.getUTCMinutes(),
+            date.getUTCSeconds() + date.getUTCMilliseconds() / 1000.0
+        );
 
         return this.fromGregorian(gregTime, convention);
     }
@@ -210,8 +210,7 @@ export class TimeStamp {
         JTfrac -= minute / (24.0 * 60.0);
         const second = JTfrac * (24.0 * 60.0 * 60.0);
 
-        return {year : year, month : month, mday : mday, 
-            hour : hour, minute : minute, second : second};
+        return new GregorianTime(year, month, mday, hour, minute, second);
     }
 
     /**
