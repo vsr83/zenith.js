@@ -215,6 +215,28 @@ export class TimeStamp {
     }
 
     /**
+     * Compute the number of Julian days to a timestamp.
+     * 
+     * @param {TimeCorrelation} corr 
+     *      Time correlation.
+     * @param {TimeStamp} target 
+     *      Target time.
+     * @returns {number} Number of Julian days.
+     */
+    public daysTo(corr : TimeCorrelation, target : TimeStamp) : number {
+        const source = this.changeTo(corr, target.getFormat(), target.getConvention());
+
+        switch (source.getFormat()) {
+            case TimeFormat.FORMAT_JULIAN:
+                return target.getJulian() - source.getJulian();
+                break;
+            case TimeFormat.FORMAT_MJD:
+                return target.getMjd() - source.getMjd();
+                break;
+        }
+    }
+
+    /**
      * Compute Julian Time from Modified Julian Date.
      * 
      * @param {number} mjd

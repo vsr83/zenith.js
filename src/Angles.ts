@@ -1,4 +1,3 @@
-
 /**
  * Interface for degree-arcmin-arcsec outputs.
  */
@@ -19,6 +18,9 @@ export interface AnglesHms
     second : number;
 };
 
+/**
+ * Class with static methods for the handling of angles.
+ */
 export class Angles 
 {
     /**

@@ -11,10 +11,10 @@ export interface StateVector {
     // Orientation of the frame.
     frameOrientation : FrameOrientation;
 
-    // Position vector.
+    // Position vector (m).
     position : number[];
 
-    // Velocity vector.
+    // Velocity vector (m/s).
     velocity : number[];
 
     // Timestamp.

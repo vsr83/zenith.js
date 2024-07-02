@@ -30,66 +30,66 @@ export enum FrameOrientation {
  */
 export enum FrameCenter {
     // Heliocenter
-    CENTER_HELIO = 'HELIO',
+    HELIOCENTER = 'HELIO',
     // Solar System Barycenter.
-    CENTER_SSB = 'SSB', 
+    SSB = 'SSB', 
     // Geocenter.
-    CENTER_GEO = 'GEO',
+    BODY_CENTER = 'BODY_CENTER',
     // Earth-Moon Barycenter.
-    CENTER_EMB = 'EMB',
+    PLANET_BARY = 'EMB',
     // Topocentric.
-    CENTER_TOPOC = 'TOPOC'
+    PLANET_TOPO = 'TOPOC'
 }
 
 const transMap : Map<FrameCenter, Map<FrameCenter, FrameCenter[]>> = 
              new Map<FrameCenter, Map<FrameCenter, FrameCenter[]>>();
 const mainTransSeq : FrameCenter[] = [
-    FrameCenter.CENTER_SSB,
-    FrameCenter.CENTER_HELIO,
-    FrameCenter.CENTER_EMB,
-    FrameCenter.CENTER_GEO,
-    FrameCenter.CENTER_TOPOC
+    FrameCenter.SSB,
+    FrameCenter.HELIOCENTER,
+    FrameCenter.PLANET_BARY,
+    FrameCenter.BODY_CENTER,
+    FrameCenter.PLANET_TOPO
 ];
 
 const transSsb   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
-transMap.set(FrameCenter.CENTER_SSB, transSsb);
-transSsb.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(1, 1));
-transSsb.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 2));
-transSsb.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(1, 3));
-transSsb.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(1, 4));
-transSsb.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(1, 5));
+transMap.set(FrameCenter.SSB, transSsb);
+transSsb.set(FrameCenter.SSB,   mainTransSeq.slice(1, 1));
+transSsb.set(FrameCenter.HELIOCENTER, mainTransSeq.slice(1, 2));
+transSsb.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(1, 3));
+transSsb.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(1, 4));
+transSsb.set(FrameCenter.PLANET_TOPO, mainTransSeq.slice(1, 5));
 
 const transHelio : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
-transMap.set(FrameCenter.CENTER_HELIO, transHelio);
-transHelio.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 1).reverse());
-transHelio.set(FrameCenter.CENTER_HELIO, []);
-transHelio.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(1, 2).reverse());
-transHelio.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(1, 3).reverse());
-transHelio.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(1, 4).reverse());
+transMap.set(FrameCenter.HELIOCENTER, transHelio);
+transHelio.set(FrameCenter.SSB,   mainTransSeq.slice(0, 1).reverse());
+transHelio.set(FrameCenter.HELIOCENTER, []);
+transHelio.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(1, 2).reverse());
+transHelio.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(1, 3).reverse());
+transHelio.set(FrameCenter.PLANET_TOPO, mainTransSeq.slice(1, 4).reverse());
 
 const transEmb   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
-transMap.set(FrameCenter.CENTER_EMB, transEmb);
-transEmb.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 2).reverse());
-transEmb.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 2).reverse());
-transEmb.set(FrameCenter.CENTER_EMB,   []);
-transEmb.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(3, 4));
-transEmb.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(3, 5));
+transMap.set(FrameCenter.PLANET_BARY, transEmb);
+transEmb.set(FrameCenter.SSB,   mainTransSeq.slice(0, 2).reverse());
+transEmb.set(FrameCenter.HELIOCENTER, mainTransSeq.slice(1, 2).reverse());
+transEmb.set(FrameCenter.PLANET_BARY,   []);
+transEmb.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(3, 4));
+transEmb.set(FrameCenter.PLANET_TOPO, mainTransSeq.slice(3, 5));
 
 const transGeo   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
-transMap.set(FrameCenter.CENTER_GEO, transGeo);
-transGeo.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 3).reverse());
-transGeo.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 3).reverse());
-transGeo.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(2, 3).reverse());
-transGeo.set(FrameCenter.CENTER_GEO,   []);
-transGeo.set(FrameCenter.CENTER_TOPOC, mainTransSeq.slice(4, 5));
+transMap.set(FrameCenter.BODY_CENTER, transGeo);
+transGeo.set(FrameCenter.SSB,   mainTransSeq.slice(0, 3).reverse());
+transGeo.set(FrameCenter.HELIOCENTER, mainTransSeq.slice(1, 3).reverse());
+transGeo.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(2, 3).reverse());
+transGeo.set(FrameCenter.BODY_CENTER,   []);
+transGeo.set(FrameCenter.PLANET_TOPO, mainTransSeq.slice(4, 5));
 
 const transTopo  : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
-transMap.set(FrameCenter.CENTER_TOPOC, transTopo);
-transTopo.set(FrameCenter.CENTER_SSB,   mainTransSeq.slice(0, 4).reverse());
-transTopo.set(FrameCenter.CENTER_HELIO, mainTransSeq.slice(1, 4).reverse());
-transTopo.set(FrameCenter.CENTER_EMB,   mainTransSeq.slice(2, 4).reverse());
-transTopo.set(FrameCenter.CENTER_GEO,   mainTransSeq.slice(3, 4).reverse());
-transTopo.set(FrameCenter.CENTER_TOPOC, []);
+transMap.set(FrameCenter.PLANET_TOPO, transTopo);
+transTopo.set(FrameCenter.SSB,   mainTransSeq.slice(0, 4).reverse());
+transTopo.set(FrameCenter.HELIOCENTER, mainTransSeq.slice(1, 4).reverse());
+transTopo.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(2, 4).reverse());
+transTopo.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(3, 4).reverse());
+transTopo.set(FrameCenter.PLANET_TOPO, []);
 
 console.log(transMap);
 
@@ -241,37 +241,37 @@ export class FrameConversions {
             const target : FrameCenter = sequence[indTrans];
 
             switch(sourceCenter) {
-                case FrameCenter.CENTER_SSB:
-                    if (target == FrameCenter.CENTER_HELIO) {
+                case FrameCenter.SSB:
+                    if (target == FrameCenter.HELIOCENTER) {
 
                     }
                     break;
-                case FrameCenter.CENTER_HELIO:
-                    if (target == FrameCenter.CENTER_SSB) {
+                case FrameCenter.HELIOCENTER:
+                    if (target == FrameCenter.SSB) {
                         
-                    } else if (target == FrameCenter.CENTER_EMB) {
-                        
-                    }
-                    break;
-                case FrameCenter.CENTER_EMB:
-                    if (target == FrameCenter.CENTER_HELIO) {
-                        
-                    } else if (target == FrameCenter.CENTER_GEO) {
+                    } else if (target == FrameCenter.PLANET_BARY) {
                         
                     }
                     break;
-                case FrameCenter.CENTER_GEO:
-                    if (target == FrameCenter.CENTER_EMB) {
+                case FrameCenter.PLANET_BARY:
+                    if (target == FrameCenter.HELIOCENTER) {
                         
-                    } else if (target == FrameCenter.CENTER_TOPOC) {
+                    } else if (target == FrameCenter.BODY_CENTER) {
+                        
+                    }
+                    break;
+                case FrameCenter.BODY_CENTER:
+                    if (target == FrameCenter.PLANET_BARY) {
+                        
+                    } else if (target == FrameCenter.PLANET_TOPO) {
                         const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
                         osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
                         osvOut = FrameConversions.translateGeoTopoEfi(osvOut, this.observerPosition);
                         osvOut = this.rotateTo(osvOut, sourceOrientation);
                     }
                     break;
-                case FrameCenter.CENTER_TOPOC:
-                    if (target == FrameCenter.CENTER_GEO) {
+                case FrameCenter.PLANET_TOPO:
+                    if (target == FrameCenter.BODY_CENTER) {
                         const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
                         osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
                         osvOut = FrameConversions.translateTopoGeoEfi(osvOut, this.observerPosition);
@@ -389,7 +389,7 @@ export class FrameConversions {
         const rEfiEarthPos = Wgs84.coordWgs84Efi(earthPos);
 
         return {
-            frameCenter : FrameCenter.CENTER_TOPOC,
+            frameCenter : FrameCenter.PLANET_TOPO,
             frameOrientation : FrameOrientation.EFI,
             position : MathUtils.vecDiff(osvGeoEfi.position, rEfiEarthPos), 
             velocity : osvGeoEfi.velocity, 
@@ -410,7 +410,7 @@ export class FrameConversions {
         const rEfiEarthPos = Wgs84.coordWgs84Efi(earthPos);
 
         return {
-            frameCenter : FrameCenter.CENTER_GEO,
+            frameCenter : FrameCenter.BODY_CENTER,
             frameOrientation : FrameOrientation.EFI,
             position : MathUtils.vecSum(osvTopoEfi.position, rEfiEarthPos), 
             velocity : osvTopoEfi.velocity, 
