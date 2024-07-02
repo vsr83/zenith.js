@@ -136,8 +136,8 @@ export class TimeStamp {
      *      Time convention.
      * @returns {TimeStamp} Timestamp.
      */
-    public fromGregorian(gregTime : GregorianTime, convention : TimeConvention) : TimeStamp {
-        const JT = this.timeJulianYmdhms(gregTime.year, gregTime.month,
+    static fromGregorian(gregTime : GregorianTime, convention : TimeConvention) : TimeStamp {
+        const JT = TimeStamp.timeJulianYmdhms(gregTime.year, gregTime.month,
             gregTime.mday, gregTime.hour, gregTime.minute, gregTime.second);
 
         return new TimeStamp(TimeFormat.FORMAT_JULIAN, convention, JT);
@@ -152,7 +152,7 @@ export class TimeStamp {
      *      Time convention.
      * @returns {TimeStamp} Timestamp.
      */
-    public fromTimestamp(date : Date, convention : TimeConvention) {
+    static fromTimestamp(date : Date, convention : TimeConvention) {
         const gregTime : GregorianTime = new GregorianTime(
             date.getUTCFullYear(),
             date.getUTCMonth() + 1,
@@ -162,7 +162,7 @@ export class TimeStamp {
             date.getUTCSeconds() + date.getUTCMilliseconds() / 1000.0
         );
 
-        return this.fromGregorian(gregTime, convention);
+        return TimeStamp.fromGregorian(gregTime, convention);
     }
 
     /**
@@ -268,7 +268,7 @@ export class TimeStamp {
      *      Day of the month (1-31).
      * @returns {number} Julian date.
      */
-    private dateJulianYmd(year : number, month : number, mday : number) : number
+    private static dateJulianYmd(year : number, month : number, mday : number) : number
     {
         if (month < 3)
         {
@@ -302,10 +302,10 @@ export class TimeStamp {
      *      Second (0-60) floating point.
      * @returns {number} An object with JD and JT for Julian date and time.
      */
-    private timeJulianYmdhms(year : number, month : number, mday : number, 
+    private static timeJulianYmdhms(year : number, month : number, mday : number, 
         hour : number, minute : number, second : number) : number
     {
-        const JD = this.dateJulianYmd(year, month, mday);
+        const JD = TimeStamp.dateJulianYmd(year, month, mday);
         const JT = JD + hour / 24.0 + minute/(24.0 * 60.0) + second/(24.0 * 60.0 * 60.0);
 
         return JT;

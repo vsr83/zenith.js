@@ -1,5 +1,6 @@
 import { TimeConvention } from "../TimeCorrelation";
 import { GregorianTime } from "../GregorianTime";
+import { TimeStamp, TimeFormat } from "../TimeStamp";
 
 /**
  * Time parameters mode.
@@ -131,6 +132,13 @@ export class TimeParameters {
         }
     }
 
+    /**
+     * Convert time parameters to a list. 
+     * 
+     * @param {TimeParametersInfo} info 
+     *      Time parameters with.
+     * @returns {TimeParametersInfo} Time parameters with a list.
+     */
     static convertToList(info : TimeParametersInfo) : TimeParametersInfo {
         switch (info.mode) {
             case TimeParamsMode.SPAN_MJD:
@@ -149,6 +157,42 @@ export class TimeParameters {
     }
 
     /**
+     * Convert time parameters to a Julian list.
+     * 
+     * @param {TimeParametersInfo} info 
+     *      Time parameters with a span.
+     * @returns {TimeParametersInfo} Time parameters with a list.
+     */
+    static convertToJulianList(info : TimeParametersInfo) : TimeParametersInfo {
+        const infoList : TimeParametersInfo = TimeParameters.convertToList(info);
+
+        const julianList : number[] = [];
+
+        if (info.mode == TimeParamsMode.LIST_JULIAN) {
+            return infoList;
+        } else if (info.mode == TimeParamsMode.LIST_MJD) {
+            const listMjd : number[] = <number[]> info.listJulian;
+            for (let ind = 0; ind < listMjd.length; ind++) {
+                const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_MJD, 
+                    info.convention, listMjd[ind]);
+                julianList.push(timeStamp.getJulian());
+            }
+        } else if (info.mode == TimeParamsMode.LIST_GREGORIAN) {
+            const listGreg : GregorianTime[] = <GregorianTime[]> info.listGregorian;
+            for (let ind = 0; ind < listGreg.length; ind++) {
+                const timeStamp : TimeStamp = TimeStamp.fromGregorian(listGreg[ind], info.convention);
+                julianList.push(timeStamp.getJulian());
+            }
+        }
+
+        return {
+            mode : TimeParamsMode.LIST_JULIAN,
+            convention : info.convention,
+            listJulian : julianList
+        };
+    }
+
+    /**
      * Convert time configuration with a Julian time span to a time configuration 
      * with list of Julian times.
      * 
@@ -163,15 +207,15 @@ export class TimeParameters {
             throw Error("Necessary parameters undefined.");
         }
 
-        const JDlist : number[] = [];
-        for (let JD : number = info.spanStartLinear; JD <= info.spanEndLinear; JD += info.timeStepLinear) {
-            JDlist.push(JD);
+        const jdList : number[] = [];
+        for (let jd : number = info.spanStartLinear; jd <= info.spanEndLinear; jd += info.timeStepLinear) {
+            jdList.push(jd);
         }
 
         return {
             mode : TimeParamsMode.LIST_JULIAN,
             convention : info.convention,
-            listJulian : JDlist
+            listJulian : jdList
         };
     }
 
