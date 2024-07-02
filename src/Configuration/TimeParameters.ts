@@ -218,14 +218,20 @@ export class TimeParameters {
             throw Error("Necessary parameters undefined.");
         }
 
-        let gregTime : GregorianTime = info.spanStartGregorian;
+        let gregTime : GregorianTime = GregorianTime.copy(info.spanStartGregorian);
         let gregList : GregorianTime[] = [];
 
         for (;;) {
-            if (gregTime.isAfter(info.spanEndGregorian)) {
-                break;
+            if (info.timeStepGregorian > 0) {
+                if (gregTime.isAfter(info.spanEndGregorian)) {
+                    break;
+                }
+            } else {
+                if (info.spanEndGregorian.isAfter(gregTime)) {
+                    break;
+                }
             }
-            gregList.push(gregTime);
+            gregList.push(GregorianTime.copy(gregTime));
 
             switch (info.timeStepGregorianUnits) {
                 case GregorianUnits.YEAR:

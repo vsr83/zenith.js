@@ -36,6 +36,18 @@ export class GregorianTime {
         this.minute = minute;
         this.second = second;
     }
+    
+    /**
+     * Copy constructor.
+     * 
+     * @param {GregorianTime} gregTime 
+     *      Object to be copied.
+     * @returns {GregorianTime} The copied object.
+     */
+    public static copy(gregTime : GregorianTime) : GregorianTime {
+        return new GregorianTime(gregTime.year, gregTime.month, gregTime.mday,
+            gregTime.hour, gregTime.minute, gregTime.second);
+    }
 
     /**
      * Check whether the year of Gregorian time corresponds to a leap year.
@@ -99,7 +111,8 @@ export class GregorianTime {
 
                 if (numDays + this.mday > daysInCurrentMonth) {
                     this.addMonths(1);
-                    numDays -= daysInCurrentMonth;
+                    numDays -= (daysInCurrentMonth - this.mday + 1);
+                    this.mday = 1;
                 } else {
                     this.mday += numDays;
                     numDays = 0;

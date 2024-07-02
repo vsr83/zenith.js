@@ -56,7 +56,6 @@ describe('GregorianTime', function() {
 
             sum = 0;
             for (let year = 2405; year >= 1900; year--) {
-                console.log(gregTime);
                 if (leapYears.includes(year - 1)) {
                     gregTime.addDays(-366);
                     sum -= 366;
@@ -64,7 +63,6 @@ describe('GregorianTime', function() {
                     gregTime.addDays(-365);
                     sum -= 365;
                 }
-                console.log(gregTime);
                 checkGregTime(gregTime, new GregorianTime(year - 1, 1, 1, 0, 0, 0));
             }
 
