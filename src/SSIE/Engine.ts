@@ -15,6 +15,12 @@ export class Engine {
     // Integration configuration for day integrator.
     private integrationConfDay : IntegrationConf;
 
+    // Last state.
+    private lastState : IntegrationState | null;
+
+    // Julian date associated to the last sate.
+    private lastJD : number | null;
+
     /**
      * Public constructor.
      * 
@@ -41,6 +47,8 @@ export class Engine {
             figIndMoon : 4
         };
         this.dayIntegrator = new DayIntegrator(this.integrationConfDay);
+        this.lastState = null;
+        this.lastJD = null;
     }
 
     /**
@@ -53,6 +61,11 @@ export class Engine {
         if (JD < JPLData.getFirstJD() || JD > JPLData.getLastJD()) {
             throw new Error('Parameter out of range!');
         }
+
+        if (this.lastState != null && JD === this.lastJD) {
+            return this.lastState;
+        }
+
         const closestFullJD = Math.round(JD);
         const stateDay = this.dayIntegrator.get(closestFullJD);
         const deltaJD = JD - closestFullJD;
@@ -75,6 +88,10 @@ export class Engine {
             integration.initialize(integration.getIntegrationState(), integrationConf);
             integration.integrateSteps(1);
         }
-        return JSON.parse(JSON.stringify(integration.getIntegrationState()));
+
+        this.lastState = JSON.parse(JSON.stringify(integration.getIntegrationState()));
+        this.lastJD = JD;
+
+        return <IntegrationState> this.lastState;
     }
 }

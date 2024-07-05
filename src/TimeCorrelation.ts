@@ -59,6 +59,9 @@ export class TimeCorrelation {
         }
         let delta = 0.0;
 
+        // TODO:
+        if (dst == TimeConvention.TIME_TDB) dst = TimeConvention.TIME_TDT;
+
         switch (src) {
             case TimeConvention.TIME_TDT:
                 delta = this.deltaTdtTai(JT);

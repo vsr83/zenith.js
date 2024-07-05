@@ -91,7 +91,7 @@ transTopo.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(2, 4).reverse());
 transTopo.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(3, 4).reverse());
 transTopo.set(FrameCenter.PLANET_TOPO, []);
 
-console.log(transMap);
+//console.log(transMap);
 
 /**
  * Map associating time stamp to different conventions.
