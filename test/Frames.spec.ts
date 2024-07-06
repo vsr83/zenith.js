@@ -8,7 +8,7 @@ import { TimeConvention } from '../src/TimeCorrelation';
 import {AssertionError, strict as assert} from 'assert';
 import { NutationData, Nutation } from '../src/Nutation';
 import { EarthPosition, Wgs84 } from '../src/Wgs84';
-import { EopParams } from '../src/EopParams';
+import { EopParams, SolarParams } from '../src/EopParams';
 
 function checkOsv(val : StateVector, exp : StateVector, posTol : number, velTol : number) {
     assert.equal(val.frameCenter, exp.frameCenter);
@@ -727,6 +727,21 @@ describe('Frames', function() {
             GMST : SiderealTime.timeGmst(timeStamp.getJulian(), timeStamp.getJulian()),
             GAST : SiderealTime.timeGast(timeStamp.getJulian(), timeStamp.getJulian(), nutData)
         };
+
+        const dummyState : StateVector = {
+            frameCenter : FrameCenter.BODY_CENTER,
+            frameOrientation : FrameOrientation.B1950_ECL,
+            position : [0, 0, 0],
+            velocity : [0, 0, 0],
+            timeStamp : timeStamp
+        };
+
+        const solarParams : SolarParams = {
+            ssbState : dummyState,
+            geoState : dummyState,
+            moonState : dummyState,
+            embState : dummyState
+        };
     
         const osvJ2000EclExp : StateVector = {
             frameCenter : FrameCenter.BODY_CENTER,
@@ -743,7 +758,7 @@ describe('Frames', function() {
         const osvEfiExp = FrameConversions.rotatePefEfi(osvPefExp, eopParams.polarDx, eopParams.polarDy);
         const osvEnuExp = FrameConversions.rotateEfiEnu(osvEfiExp, observerPosition);
 
-        const frameConversions : FrameConversions = new FrameConversions(eopParams, observerPosition);
+        const frameConversions : FrameConversions = new FrameConversions(eopParams, observerPosition, solarParams);
         frameConversions.setObserverPosition(observerPosition);
         const osvEq  = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.J2000_EQ);
         const osvMod = frameConversions.rotateTo(osvJ2000EclExp, FrameOrientation.MOD);

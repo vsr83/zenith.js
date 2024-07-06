@@ -6,7 +6,7 @@ import { MathUtils } from './MathUtils';
 import { EarthPosition, Wgs84 } from './Wgs84';
 import { TimeStamp } from './TimeStamp';
 import { TimeConvention } from './TimeCorrelation';
-import { EopParams } from './EopParams';
+import { EopParams, SolarParams } from './EopParams';
 
 /**
  * Enumeration of supported frame orientations.
@@ -206,6 +206,9 @@ export class FrameConversions {
     // Earth Orientation Parameters.
     private eopParams : EopParams;
 
+    // Solar System parameters.
+    private solarParams : SolarParams;
+
     // Observer position for topocentric frames.
     private observerPosition : EarthPosition;
 
@@ -216,10 +219,15 @@ export class FrameConversions {
      *      Earth orientation parameters used for transformations.
      * @param {EarthPosition} observerPosition 
      *      Observer position.
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * 
      */
-    public constructor(eopParams : EopParams, observerPosition : EarthPosition) {
+    public constructor(eopParams : EopParams, observerPosition : EarthPosition,
+        solarParams : SolarParams) {
         this.eopParams = eopParams;
         this.observerPosition = observerPosition;
+        this.solarParams = solarParams;
     }
 
     /**
@@ -240,31 +248,44 @@ export class FrameConversions {
         for (let indTrans = 0; indTrans < sequence.length; indTrans++) {
             const target : FrameCenter = sequence[indTrans];
 
+            const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
+
             switch(sourceCenter) {
                 case FrameCenter.SSB:
                     if (target == FrameCenter.HELIOCENTER) {
-
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.J2000_EQ);
+                        osvOut = FrameConversions.translateSsbHel(osvOut, this.solarParams);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);
                     }
                     break;
                 case FrameCenter.HELIOCENTER:
                     if (target == FrameCenter.SSB) {
-                        
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.J2000_EQ);
+                        osvOut = FrameConversions.translateHelSsb(osvOut, this.solarParams);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);                        
                     } else if (target == FrameCenter.PLANET_BARY) {
-                        
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.J2000_EQ);
+                        osvOut = FrameConversions.translateHelBary(osvOut, this.solarParams);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);                        
                     }
                     break;
                 case FrameCenter.PLANET_BARY:
                     if (target == FrameCenter.HELIOCENTER) {
-                        
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.J2000_EQ);
+                        osvOut = FrameConversions.translateBaryHel(osvOut, this.solarParams);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);
                     } else if (target == FrameCenter.BODY_CENTER) {
-                        
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.J2000_EQ);
+                        osvOut = FrameConversions.translateBaryGeo(osvOut, this.solarParams);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);                        
                     }
                     break;
                 case FrameCenter.BODY_CENTER:
                     if (target == FrameCenter.PLANET_BARY) {
-                        
+                        osvOut = this.rotateTo(osvOut, FrameOrientation.J2000_EQ);
+                        osvOut = FrameConversions.translateGeoBary(osvOut, this.solarParams);
+                        osvOut = this.rotateTo(osvOut, sourceOrientation);                                                
                     } else if (target == FrameCenter.PLANET_TOPO) {
-                        const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
                         osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
                         osvOut = FrameConversions.translateGeoTopoEfi(osvOut, this.observerPosition);
                         osvOut = this.rotateTo(osvOut, sourceOrientation);
@@ -272,7 +293,6 @@ export class FrameConversions {
                     break;
                 case FrameCenter.PLANET_TOPO:
                     if (target == FrameCenter.BODY_CENTER) {
-                        const sourceOrientation : FrameOrientation = osvOut.frameOrientation;
                         osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
                         osvOut = FrameConversions.translateTopoGeoEfi(osvOut, this.observerPosition);
                         osvOut = this.rotateTo(osvOut, sourceOrientation);                        
@@ -417,6 +437,125 @@ export class FrameConversions {
             timeStamp : osvTopoEfi.timeStamp
         };
     }
+
+    /**
+     * Translate OSV from the SSB to heliocentric location.
+     * 
+     * @param {StateVector} osvSsbJ2000Eq
+     *      Target OSV in the SSB J2000 equatorial frame. 
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * @returns {StateVector} Target OSV in the heliocentric J2000 equatorial frame.
+     */
+    static translateSsbHel(osvSsbJ2000Eq : StateVector, solarParams : SolarParams) : StateVector {
+        return {
+            frameCenter : FrameCenter.HELIOCENTER,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : MathUtils.vecSum(osvSsbJ2000Eq.position, solarParams.ssbState.position), 
+            velocity : MathUtils.vecSum(osvSsbJ2000Eq.velocity, solarParams.ssbState.velocity), 
+            timeStamp : osvSsbJ2000Eq.timeStamp
+        };
+    }
+
+    /**
+     * Translate OSV from the heliocentric to the SSB location.
+     * 
+     * @param {StateVector} osvHelJ2000Eq
+     *      Target OSV in the heliocentric J2000 equatorial frame. 
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * @returns {StateVector} Target OSV in the SSB J2000 equatorial frame.
+     */
+    static translateHelSsb(osvSsbJ2000Eq : StateVector, solarParams : SolarParams) : StateVector {
+        return {
+            frameCenter : FrameCenter.SSB,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : MathUtils.vecDiff(osvSsbJ2000Eq.position, solarParams.ssbState.position), 
+            velocity : MathUtils.vecDiff(osvSsbJ2000Eq.velocity, solarParams.ssbState.velocity), 
+            timeStamp : osvSsbJ2000Eq.timeStamp
+        };
+    }
+
+    /**
+     * Translate OSV from the barycentric to heliocentric location.
+     * 
+     * @param {StateVector} osvBaryJ2000Eq
+     *      Target OSV in the SSB J2000 equatorial frame. 
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * @returns {StateVector} Target OSV in the heliocentric J2000 equatorial frame.
+     */
+    static translateBaryHel(osvBaryJ2000Eq : StateVector, solarParams : SolarParams) : StateVector {
+        return {
+            frameCenter : FrameCenter.HELIOCENTER,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : MathUtils.vecSum(osvBaryJ2000Eq.position, solarParams.embState.position), 
+            velocity : MathUtils.vecSum(osvBaryJ2000Eq.velocity, solarParams.embState.velocity), 
+            timeStamp : osvBaryJ2000Eq.timeStamp
+        };
+    }
+
+    /**
+     * Translate OSV from the heliocentric to the barycentric location.
+     * 
+     * @param {StateVector} osvHelJ2000Eq
+     *      Target OSV in the heliocentric J2000 equatorial frame. 
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * @returns {StateVector} Target OSV in the barycentric J2000 equatorial frame.
+     */
+    static translateHelBary(osvHelJ2000Eq : StateVector, solarParams : SolarParams) : StateVector {
+        return {
+            frameCenter : FrameCenter.PLANET_BARY,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : MathUtils.vecDiff(osvHelJ2000Eq.position, solarParams.embState.position), 
+            velocity : MathUtils.vecDiff(osvHelJ2000Eq.velocity, solarParams.embState.velocity), 
+            timeStamp : osvHelJ2000Eq.timeStamp
+        };
+    }
+
+    /**
+     * Translate OSV from the barycentric to geocentric location.
+     * 
+     * @param {StateVector} osvBaryJ2000Eq
+     *      Target OSV in the SSB J2000 equatorial frame. 
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * @returns {StateVector} Target OSV in the geocentric J2000 equatorial frame.
+     */
+    static translateBaryGeo(osvBaryJ2000Eq : StateVector, solarParams : SolarParams) : StateVector {
+        return {
+            frameCenter : FrameCenter.BODY_CENTER,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : MathUtils.vecDiff(
+                MathUtils.vecSum(osvBaryJ2000Eq.position, solarParams.embState.position),
+                solarParams.geoState.position), 
+            velocity : MathUtils.vecDiff(
+                MathUtils.vecSum(osvBaryJ2000Eq.velocity, solarParams.embState.velocity),
+                solarParams.geoState.velocity),
+            timeStamp : osvBaryJ2000Eq.timeStamp
+        };
+    }
+
+    /**
+     * Translate OSV from the geocentric to the barycentric location.
+     * 
+     * @param {StateVector} osvGeoJ2000Eq
+     *      Target OSV in the geocentric J2000 equatorial frame. 
+     * @param {SolarParams} solarParams 
+     *      Solar system parameters.
+     * @returns {StateVector} Target OSV in the barycentric J2000 equatorial frame.
+     */
+    static translateGeoBary(osvGeoJ2000Eq : StateVector, solarParams : SolarParams) : StateVector {
+        return {
+            frameCenter : FrameCenter.PLANET_BARY,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : MathUtils.vecDiff(osvGeoJ2000Eq.position, solarParams.embState.position), 
+            velocity : MathUtils.vecDiff(osvGeoJ2000Eq.velocity, solarParams.embState.velocity), 
+            timeStamp : osvGeoJ2000Eq.timeStamp
+        };
+    }
+
 
     /**
      * Rotate OSV from mean equatorial to ecliptic frame.

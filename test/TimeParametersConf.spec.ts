@@ -2,7 +2,7 @@ import { checkFloat, checkFloatArray} from './common';
 import 'mocha';
 import {AssertionError, strict as assert} from 'assert';
 import { GregorianTime } from '../src/GregorianTime';
-import { GregorianUnits, TimeParameters, TimeParametersInfo, TimeParamsMode } from '../src/Configuration/TimeParameters';
+import { GregorianUnits, TimeParameters, TimeParametersInfo, TimeParamsMode } from '../src/Configuration/TimeParameterConf';
 import { TimeConvention } from '../src/TimeCorrelation';
 
 const leapYears = [

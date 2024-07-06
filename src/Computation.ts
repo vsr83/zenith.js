@@ -6,7 +6,7 @@ import { ComputationInfo } from "./Configuration/ComputationConf";
 import { TimeStamp, TimeFormat } from "./TimeStamp";
 import { TimeConvention, TimeCorrelation } from "./TimeCorrelation";
 import { FrameCenter, FrameOrientation, FrameConversions } from "./Frames";
-import { EopComputation, EopParams } from "./EopParams";
+import { EopComputation, EopParams, SolarParams } from "./EopParams";
 import { Engine } from "./SSIE/Engine";
 import { IntegrationState } from "./SSIE/Integration";
 import { StateVector } from "./StateVector";
@@ -30,6 +30,12 @@ export class Computation {
     // Solar System Integration Engine (SSIE).
     engine : Engine;
 
+    /**
+     * Public constructor.
+     * 
+     * @param {ComputationInfo} info 
+     *      Configuration defining the computation.
+     */
     constructor(info : ComputationInfo) {
         this.timeParameters = info.timeParameters;
         this.corrections = info.corrections;
@@ -65,11 +71,17 @@ export class Computation {
     computeTimeStep(timeStamp : TimeStamp) {
         // Perform time correlations and EOP interpolation.
         const eopParams : EopParams = EopComputation.computeEopData(timeStamp, this.timeCorrelation);
+        // We integrate the Solar System regardless of target type. Note that SSIE implements
+        // a cache so that the integration is done exactly once for each unique time stamp.
+        const integrationState : IntegrationState = this.engine.get(eopParams.timeStampTdb.getJulian());
+        // Compute solar system parameters.
+        const solarParams : SolarParams = EopComputation.computeSolarData(timeStamp, integrationState);
+
 
         for (let indTarget = 0; indTarget < this.targetList.length; indTarget++) {
             const target : Target = this.targetList[indTarget];
 
-            this.computeTarget(timeStamp, target, eopParams);
+            this.computeTarget(timeStamp, target, eopParams, solarParams, integrationState);
         }
     }
 
@@ -82,13 +94,14 @@ export class Computation {
      *      The target. 
      * @param {EopParams} eopParams
      *      The EOP.
+     * @param {SolarParams} solarParams
+     *      The solar system parameters.
+     * @param {IntegrationState} state 
+     *      The integration state of the solar system.
      */
-    computeTarget(timeStamp : TimeStamp, target : Target, eopParams : EopParams) {
+    computeTarget(timeStamp : TimeStamp, target : Target, eopParams : EopParams,
+        solarParams : SolarParams, state : IntegrationState) {
         let stateVector : StateVector;
-
-        // We integrate the Solar System regardless of target type. Note that SSIE implements
-        // a cache so that the integration is done exactly once for each unique time stamp.
-        const state : IntegrationState = this.engine.get(eopParams.timeStampTdb.getJulian());
 
         // First compute a state vector for the target.
         switch (target.type) {
