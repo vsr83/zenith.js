@@ -4,8 +4,8 @@ import { GregorianTime } from "./GregorianTime";
  * Time format.
  */
 export enum TimeFormat {
-    FORMAT_JULIAN,
-    FORMAT_MJD
+    FORMAT_JULIAN = "JULIAN",
+    FORMAT_MJD    = "MJD"
 };
 
 /**

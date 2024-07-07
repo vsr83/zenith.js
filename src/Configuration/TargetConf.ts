@@ -34,8 +34,8 @@ export interface Target {
     refNumber : number;
 }
 
-const targetList : Target[] = [];
-const targetMap : Map<string, number> = new Map<string, number>();
+export const targetList : Target[] = [];
+export const targetMap : Map<string, number> = new Map<string, number>();
 
 // Insert target to a list.
 function insertTarget(target : Target) {

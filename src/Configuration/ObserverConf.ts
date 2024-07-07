@@ -26,6 +26,8 @@ export interface ObserverInfo {
     stateInterpolated? : StateVector[];
     // TLE for the observer.
     tle? : string;
+    //
+    earthPos? : EarthPosition;
 };
 
 /**
@@ -75,12 +77,13 @@ export class Observer {
         return {
             mode : ObserverMode.STATIC,
             state : {
-                frameOrientation : FrameOrientation.TEME,
+                frameOrientation : FrameOrientation.EFI,
                 frameCenter : FrameCenter.BODY_CENTER,
                 position : posEfi,
                 velocity : [0, 0, 0],
                 timeStamp : timeStamp
-            }
+            },
+            earthPos : earthPos
         }
     }
 

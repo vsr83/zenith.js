@@ -18,11 +18,11 @@ export interface TimeCorrelationData {
  * Enumeration for time conventions.
  */
 export enum TimeConvention {
-    TIME_TDB, 
-    TIME_TDT,
-    TIME_UT1,
-    TIME_UTC,
-    TIME_TAI
+    TIME_TDB = "TDB", 
+    TIME_TDT = "TDT",
+    TIME_UT1 = "UT1",
+    TIME_UTC = "UTC",
+    TIME_TAI = "TAI"
 };
 
 /**

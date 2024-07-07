@@ -168,16 +168,16 @@ export class TimeParameters {
 
         const julianList : number[] = [];
 
-        if (info.mode == TimeParamsMode.LIST_JULIAN) {
+        if (infoList.mode == TimeParamsMode.LIST_JULIAN) {
             return infoList;
-        } else if (info.mode == TimeParamsMode.LIST_MJD) {
+        } else if (infoList.mode == TimeParamsMode.LIST_MJD) {
             const listMjd : number[] = <number[]> info.listJulian;
             for (let ind = 0; ind < listMjd.length; ind++) {
                 const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_MJD, 
                     info.convention, listMjd[ind]);
                 julianList.push(timeStamp.getJulian());
             }
-        } else if (info.mode == TimeParamsMode.LIST_GREGORIAN) {
+        } else if (infoList.mode == TimeParamsMode.LIST_GREGORIAN) {
             const listGreg : GregorianTime[] = <GregorianTime[]> info.listGregorian;
             for (let ind = 0; ind < listGreg.length; ind++) {
                 const timeStamp : TimeStamp = TimeStamp.fromGregorian(listGreg[ind], info.convention);

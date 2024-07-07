@@ -210,20 +210,20 @@ export class FrameConversions {
     private solarParams : SolarParams;
 
     // Observer position for topocentric frames.
-    private observerPosition : EarthPosition;
+    private observerPosition : EarthPosition | null;
 
     /**
      * Public constructor.
      * 
      * @param {EopParams} eopParams 
      *      Earth orientation parameters used for transformations.
-     * @param {EarthPosition} observerPosition 
+     * @param {EarthPosition | null} observerPosition 
      *      Observer position.
      * @param {SolarParams} solarParams 
      *      Solar system parameters.
      * 
      */
-    public constructor(eopParams : EopParams, observerPosition : EarthPosition,
+    public constructor(eopParams : EopParams, observerPosition : EarthPosition | null,
         solarParams : SolarParams) {
         this.eopParams = eopParams;
         this.observerPosition = observerPosition;
@@ -240,7 +240,15 @@ export class FrameConversions {
         this.observerPosition = observerPosition;
     }
 
-    public translateTo(osvIn : StateVector, targetCenter : FrameCenter) {
+    /**
+     * Translate state vector to a center.
+     * 
+     * @param {StateVector} osvIn 
+     *      Input state vector.
+     * @param {FrameCenter} targetCenter 
+     *      Target center.
+     */
+    public translateTo(osvIn : StateVector, targetCenter : FrameCenter) : StateVector {
         const sourceCenter : FrameCenter = osvIn.frameCenter;
         const sequence : FrameCenter[] = <FrameCenter[]> transMap.get(sourceCenter)?.get(targetCenter);
         let osvOut : StateVector = osvIn;
@@ -287,19 +295,20 @@ export class FrameConversions {
                         osvOut = this.rotateTo(osvOut, sourceOrientation);                                                
                     } else if (target == FrameCenter.PLANET_TOPO) {
                         osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
-                        osvOut = FrameConversions.translateGeoTopoEfi(osvOut, this.observerPosition);
+                        osvOut = FrameConversions.translateGeoTopoEfi(osvOut, <EarthPosition> this.observerPosition);
                         osvOut = this.rotateTo(osvOut, sourceOrientation);
                     }
                     break;
                 case FrameCenter.PLANET_TOPO:
                     if (target == FrameCenter.BODY_CENTER) {
                         osvOut = this.rotateTo(osvOut, FrameOrientation.EFI);
-                        osvOut = FrameConversions.translateTopoGeoEfi(osvOut, this.observerPosition);
+                        osvOut = FrameConversions.translateTopoGeoEfi(osvOut, <EarthPosition> this.observerPosition);
                         osvOut = this.rotateTo(osvOut, sourceOrientation);                        
                     } 
                     break;
             }
         }
+        return osvOut;
     }
     
     /**
@@ -376,7 +385,7 @@ export class FrameConversions {
                     break;
                 case FrameOrientation.EFI:
                     if (target == FrameOrientation.ENU) {
-                        osvOut = FrameConversions.rotateEfiEnu(osvOut, this.observerPosition);
+                        osvOut = FrameConversions.rotateEfiEnu(osvOut, <EarthPosition> this.observerPosition);
                     } else if (target == FrameOrientation.PEF) {
                         osvOut = FrameConversions.rotateEfiPef(osvOut, this.eopParams.polarDx,
                             this.eopParams.polarDy);
@@ -384,7 +393,7 @@ export class FrameConversions {
                     break;
                 case FrameOrientation.ENU:
                     if (target == FrameOrientation.EFI) {
-                        osvOut = FrameConversions.rotateEnuEfi(osvOut, this.observerPosition);
+                        osvOut = FrameConversions.rotateEnuEfi(osvOut, <EarthPosition> this.observerPosition);
                     }
                     break;
                 case FrameOrientation.PERI:
@@ -394,6 +403,49 @@ export class FrameConversions {
         }
 
         return osvOut;
+    }
+
+    /**
+     * Create double map of state vectors for each pair of frame center and
+     * frame orientation.
+     * 
+     * @param {StateVector} osv
+     *      Input OSV. 
+     * @returns {Map<FrameCenter, Map<FrameOrientation, StateVector>>} Map of
+     *      state vectors.
+     */
+    public getAll(osv : StateVector) : Map<FrameCenter, Map<FrameOrientation, StateVector>> {
+        const stateMap : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
+        new Map<FrameCenter, Map<FrameOrientation, StateVector>>();
+        
+        for (let indTrans = 0; indTrans < mainTransSeq.length; indTrans++) {
+            const target : FrameCenter = mainTransSeq[indTrans];
+
+            const osvNew = this.translateTo(osv, target);
+            stateMap.set(target, this.rotateAll(osvNew));            
+        }
+
+        return stateMap;
+    }
+
+    /**
+     * Rotate state vector to all target frames.
+     * 
+     * @param {StateVector} osv
+     *     Input state. 
+     * @returns {Map<FrameOrientation, StateVector>} State vector for each frame.
+     */
+    private rotateAll(osv : StateVector) : Map<FrameOrientation, StateVector> {
+        const stateMap : Map<FrameOrientation, StateVector> = new Map<FrameOrientation, StateVector>();
+
+        for (let indRot = 0; indRot < mainRotSeq.length; indRot++) {
+            const target : FrameOrientation = mainRotSeq[indRot];
+            if (target != FrameOrientation.ENU || this.observerPosition != null) {
+                stateMap.set(target, this.rotateTo(osv, target));
+            }
+        }
+
+        return stateMap;
     }
 
     /**

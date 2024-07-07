@@ -12,6 +12,8 @@ import { IntegrationState } from "./SSIE/Integration";
 import { StateVector } from "./StateVector";
 import { MathUtils } from "./MathUtils";
 import { constants } from "./SSIE/Constants";
+import { EarthPosition } from "./Wgs84";
+import { TargetResults, TimeStepResults } from "./Results";
 
 /**
  * Class organizing the high-level computation.
@@ -28,7 +30,7 @@ export class Computation {
     // Time correlation.
     timeCorrelation : TimeCorrelation;
     // Solar System Integration Engine (SSIE).
-    engine : Engine;
+    engine : Engine;    
 
     /**
      * Public constructor.
@@ -49,17 +51,21 @@ export class Computation {
     /**
      * Perform computation for all time steps and targets.
      */
-    compute() {
+    compute() : TimeStepResults[] {
         const timeSteps : TimeParametersInfo = TimeParameters.convertToJulianList(this.timeParameters);
         const timeStepsJulian : number[] = <number[]> timeSteps.listJulian;
+
+        const results : TimeStepResults[] = [];
 
         for (let indTimestep = 0; indTimestep < timeStepsJulian.length; indTimestep++) {
             const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
                 this.timeParameters.convention, timeStepsJulian[indTimestep]);
 
-            this.computeTimeStep(timeStamp);
+            const timeStepResults : TimeStepResults = this.computeTimeStep(timeStamp);
+            results.push(timeStepResults);
         }
 
+        return results;
     }
 
     /**
@@ -67,8 +73,9 @@ export class Computation {
      * 
      * @param {TimeStamp} timeStamp
      *      Time stamp. 
+     * @returns {TimeStepResults} Results for all targets for the given time step.
      */
-    computeTimeStep(timeStamp : TimeStamp) {
+    computeTimeStep(timeStamp : TimeStamp) : TimeStepResults {
         // Perform time correlations and EOP interpolation.
         const eopParams : EopParams = EopComputation.computeEopData(timeStamp, this.timeCorrelation);
         // We integrate the Solar System regardless of target type. Note that SSIE implements
@@ -77,12 +84,24 @@ export class Computation {
         // Compute solar system parameters.
         const solarParams : SolarParams = EopComputation.computeSolarData(timeStamp, integrationState);
 
+        const targets : Target[] = [];
+        const results : TargetResults[] = [];
 
         for (let indTarget = 0; indTarget < this.targetList.length; indTarget++) {
             const target : Target = this.targetList[indTarget];
 
-            this.computeTarget(timeStamp, target, eopParams, solarParams, integrationState);
+            const targetResults : TargetResults = this.computeTarget(timeStamp, target, eopParams, 
+                solarParams, integrationState);
+
+                targets.push(target);
+                results.push(targetResults);
         }
+
+        return {
+            timeStamp : timeStamp,
+            targets : targets,
+            results : results
+        };
     }
 
     /**
@@ -98,10 +117,15 @@ export class Computation {
      *      The solar system parameters.
      * @param {IntegrationState} state 
      *      The integration state of the solar system.
+     * @return {TargetResults} Target results for a single time step.
      */
     computeTarget(timeStamp : TimeStamp, target : Target, eopParams : EopParams,
-        solarParams : SolarParams, state : IntegrationState) {
-        let stateVector : StateVector;
+        solarParams : SolarParams, state : IntegrationState) : TargetResults {
+        let stateVector : StateVector | null = null;
+
+        const frameConversions : FrameConversions = new FrameConversions(
+            eopParams, <EarthPosition> this.observer.earthPos, solarParams
+        );
 
         // First compute a state vector for the target.
         switch (target.type) {
@@ -113,6 +137,16 @@ export class Computation {
                 break;
             case TargetType.SATELLITE_SGP4:
                 break;
+        }
+
+        // Fill results by converting the state vector to every frame.
+        if (stateVector != null) {
+            const targetResults : TargetResults = {
+                stateMap : frameConversions.getAll(stateVector)
+            }
+            return targetResults;
+        } else {
+            throw Error("Target type " + target.type + " not implemented.");
         }
     }
 
