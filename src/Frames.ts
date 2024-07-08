@@ -63,9 +63,9 @@ const transHelio : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameC
 transMap.set(FrameCenter.HELIOCENTER, transHelio);
 transHelio.set(FrameCenter.SSB,   mainTransSeq.slice(0, 1).reverse());
 transHelio.set(FrameCenter.HELIOCENTER, []);
-transHelio.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(1, 2).reverse());
-transHelio.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(1, 3).reverse());
-transHelio.set(FrameCenter.PLANET_TOPO, mainTransSeq.slice(1, 4).reverse());
+transHelio.set(FrameCenter.PLANET_BARY, mainTransSeq.slice(2, 3));
+transHelio.set(FrameCenter.BODY_CENTER, mainTransSeq.slice(2, 4));
+transHelio.set(FrameCenter.PLANET_TOPO, mainTransSeq.slice(2, 5));
 
 const transEmb   : Map<FrameCenter, FrameCenter[]> = new Map<FrameCenter, FrameCenter[]>();
 transMap.set(FrameCenter.PLANET_BARY, transEmb);
@@ -91,7 +91,7 @@ transTopo.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(2, 4).reverse());
 transTopo.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(3, 4).reverse());
 transTopo.set(FrameCenter.PLANET_TOPO, []);
 
-//console.log(transMap);
+console.log(transMap);
 
 /**
  * Map associating time stamp to different conventions.
@@ -249,7 +249,7 @@ export class FrameConversions {
      *      Target center.
      */
     public translateTo(osvIn : StateVector, targetCenter : FrameCenter) : StateVector {
-        const sourceCenter : FrameCenter = osvIn.frameCenter;
+        let sourceCenter : FrameCenter = osvIn.frameCenter;
         const sequence : FrameCenter[] = <FrameCenter[]> transMap.get(sourceCenter)?.get(targetCenter);
         let osvOut : StateVector = osvIn;
 
@@ -307,6 +307,7 @@ export class FrameConversions {
                     } 
                     break;
             }
+            sourceCenter = target;
         }
         return osvOut;
     }
@@ -331,6 +332,7 @@ export class FrameConversions {
 
         for (let indTrans = 0; indTrans < sequence.length; indTrans++) {
             const target : FrameOrientation = sequence[indTrans];
+
 
             switch(source) {
                 case FrameOrientation.B1950_ECL:
@@ -422,7 +424,7 @@ export class FrameConversions {
             const target : FrameCenter = mainTransSeq[indTrans];
 
             const osvNew = this.translateTo(osv, target);
-            stateMap.set(target, this.rotateAll(osvNew));            
+            stateMap.set(target, this.rotateAll(osvNew));
         }
 
         return stateMap;

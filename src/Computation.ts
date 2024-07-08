@@ -152,8 +152,15 @@ export class Computation {
 
         const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
 
+        const stateVectorCorrected : StateVector = this.computeStateVector(timeStamp, target, eopParams, 
+            solarParams, integrationState);
+
+
+        console.log(lightTimeDays);
+
+
         const stateMapCorrected : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
-            frameConversions.getAll(stateVectorRaw);
+            frameConversions.getAll(stateVectorCorrected);
 
         //const targetObs : StateVector = (Map<FrameOrientation, StateVector> stateMapRaw.get(this.observer.state.frameCenter)?
         //).get(this.observer.state.frameOrientation);

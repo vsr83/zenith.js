@@ -46,7 +46,7 @@ describe('Computation', function() {
             const observer : ObserverInfo = Observer.initializeFromWgs84(earthPos, dummyTimeStamp);
             const target : Target = targetList[1];
 
-            const targetSel : Target[] = [targetList[3], targetList[4]];
+            const targetSel : Target[] = [targetList[1]];
 
             const computationInfo : ComputationInfo = {
                 timeParameters : timeParameters,
@@ -63,13 +63,14 @@ describe('Computation', function() {
                 console.log(timeStepResults.timeStamp);
                 console.log(timeStepResults.targets);
 
+                
                 for (let indTarget = 0; indTarget < timeStepResults.targets.length; indTarget++) {
                     console.log(timeStepResults.results[indTarget].stateMapRaw
-                        .get(FrameCenter.BODY_CENTER)
-                        ?.get(FrameOrientation.ENU));
+                        .get(FrameCenter.HELIOCENTER)
+                        ?.get(FrameOrientation.EFI));
                     console.log(timeStepResults.results[indTarget].stateMapLightTime
-                        .get(FrameCenter.BODY_CENTER)
-                        ?.get(FrameOrientation.ENU));
+                        .get(FrameCenter.HELIOCENTER)
+                        ?.get(FrameOrientation.EFI));
                     }
             }
         });
