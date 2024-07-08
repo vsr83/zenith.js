@@ -9,7 +9,11 @@ import { Target } from "./Configuration/TargetConf";
  */
 export interface TargetResults {
     // Map that associates a state vector to each pair (FrameCenter, FrameOrientation).
-    stateMap : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
+    // The positions and velocities are raw without any corrections of any kind.
+    stateMapRaw : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
+
+    // State map with positions and velocities corrected for light time.
+    stateMapLightTime : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
 };
 
 /**

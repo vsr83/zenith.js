@@ -121,33 +121,95 @@ export class Computation {
      */
     computeTarget(timeStamp : TimeStamp, target : Target, eopParams : EopParams,
         solarParams : SolarParams, state : IntegrationState) : TargetResults {
-        let stateVector : StateVector | null = null;
 
         const frameConversions : FrameConversions = new FrameConversions(
             eopParams, <EarthPosition> this.observer.earthPos, solarParams
         );
 
-        // First compute a state vector for the target.
-        switch (target.type) {
-            case TargetType.SSIE:
-                // Integrate to the target time.
-                stateVector = this.ssieToStateVector(timeStamp, state, target.refNumber);
-                break;
-            case TargetType.STAR_HIPPARCHUS:
-                break;
-            case TargetType.SATELLITE_SGP4:
-                break;
+        const stateVectorRaw : StateVector = this.computeStateVector(timeStamp, target, eopParams, 
+            solarParams, state);
+        const stateMapRaw : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
+            frameConversions.getAll(stateVectorRaw);
+
+
+
+        const stateVectorObs : StateVector = this.observer.state;
+
+        const targetObs : StateVector | undefined = stateMapRaw.get(this.observer.state.frameCenter)
+            ?.get(this.observer.state.frameOrientation);
+        if (targetObs === undefined) {
+            throw Error('foo');
         }
 
+        // Speed of light m/s.
+        const c = 299792458;
+        const distance : number = MathUtils.norm(MathUtils.vecDiff(
+            stateVectorRaw.position, targetObs.position
+        ));
+        const lightTimeDays = distance / (c * 86400);
+        const timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+            timeStamp.getConvention(), timeStamp.getJulian() - lightTimeDays);
+
+        const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
+
+        const stateMapCorrected : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
+            frameConversions.getAll(stateVectorRaw);
+
+        //const targetObs : StateVector = (Map<FrameOrientation, StateVector> stateMapRaw.get(this.observer.state.frameCenter)?
+        //).get(this.observer.state.frameOrientation);
+
+/*
         // Fill results by converting the state vector to every frame.
         if (stateVector != null) {
             const targetResults : TargetResults = {
-                stateMap : frameConversions.getAll(stateVector)
+                stateMapRaw : frameConversions.getAll(stateVector)
             }
             return targetResults;
         } else {
             throw Error("Target type " + target.type + " not implemented.");
-        }
+        }*/
+
+        return {
+            stateMapRaw : stateMapRaw,
+            stateMapLightTime : stateMapCorrected
+        };
+    }
+
+    /**
+     * Compute a state vector for a single target.
+     * 
+     * @param {TimeStamp} timeStamp
+     *      Time stamp. 
+     * @param {Target} target
+     *      The target. 
+     * @param {EopParams} eopParams
+     *      The EOP.
+     * @param {SolarParams} solarParams
+     *      The solar system parameters.
+     * @param {IntegrationState} state 
+     *      The integration state of the solar system.
+     * @return {TargetResults} Target results for a single time step.
+     */
+    computeStateVector(timeStamp : TimeStamp, target : Target, eopParams : EopParams,
+        solarParams : SolarParams, state : IntegrationState) : StateVector {
+            let stateVector : StateVector | null = null;
+    
+            // First compute a state vector for the target.
+            switch (target.type) {
+                case TargetType.SSIE:
+                    // Integrate to the target time.
+                    stateVector = this.ssieToStateVector(timeStamp, state, target.refNumber);
+                    break;
+                case TargetType.STAR_HIPPARCHUS:
+                    break;
+                case TargetType.SATELLITE_SGP4:
+                    break;
+            }
+            if (stateVector != null) {
+                return stateVector;
+            } else {
+                throw Error("Target type " + target.type + " not implemented.");
+            }
     }
 
     /**
