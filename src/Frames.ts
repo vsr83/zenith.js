@@ -91,7 +91,7 @@ transTopo.set(FrameCenter.PLANET_BARY,   mainTransSeq.slice(2, 4).reverse());
 transTopo.set(FrameCenter.BODY_CENTER,   mainTransSeq.slice(3, 4).reverse());
 transTopo.set(FrameCenter.PLANET_TOPO, []);
 
-console.log(transMap);
+//console.log(transMap);
 
 /**
  * Map associating time stamp to different conventions.
@@ -604,8 +604,10 @@ export class FrameConversions {
         return {
             frameCenter : FrameCenter.PLANET_BARY,
             frameOrientation : FrameOrientation.J2000_EQ,
-            position : MathUtils.vecDiff(osvGeoJ2000Eq.position, solarParams.embState.position), 
-            velocity : MathUtils.vecDiff(osvGeoJ2000Eq.velocity, solarParams.embState.velocity), 
+            position : MathUtils.vecDiff(MathUtils.vecSum(solarParams.geoState.position, osvGeoJ2000Eq.position), 
+                solarParams.embState.position), 
+            velocity : MathUtils.vecDiff(MathUtils.vecSum(solarParams.geoState.velocity, osvGeoJ2000Eq.velocity), 
+                solarParams.embState.velocity), 
             timeStamp : osvGeoJ2000Eq.timeStamp
         };
     }

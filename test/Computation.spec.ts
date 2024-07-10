@@ -31,13 +31,13 @@ describe('Computation', function() {
         it('Mercury', function() {
 
             const timeParameters : TimeParametersInfo = TimeParameters.createFromJulianSpan(
-                2460497.5000000, 2460527.5000000, 1, TimeConvention.TIME_UTC
+                2450497.5000000, 2450498.5000000, 1, TimeConvention.TIME_UTC
             );
             const corrections : CorrectionInfo = {
                 corrections : [CorrectionType.LIGHT_TIME],
                 refractionParams : {refractionModel : RefractionModel.NO_CORRECTION}
             };
-            const earthPos : EarthPosition = {lat : 61.4971, lon : 23.7526, h : 0};
+            const earthPos : EarthPosition = {lat : 61.4945763, lon : 23.8283, h : 121.916};
             const dummyTimeStamp : TimeStamp = new TimeStamp(
                 TimeFormat.FORMAT_JULIAN, 
                 TimeConvention.TIME_TDB,
@@ -60,18 +60,26 @@ describe('Computation', function() {
 
             for (let timeStep = 0; timeStep < results.length; timeStep++) {
                 const timeStepResults : TimeStepResults = results[timeStep];
-                console.log(timeStepResults.timeStamp);
-                console.log(timeStepResults.targets);
-
                 
                 for (let indTarget = 0; indTarget < timeStepResults.targets.length; indTarget++) {
                     console.log(timeStepResults.results[indTarget].stateMapRaw
                         .get(FrameCenter.HELIOCENTER)
-                        ?.get(FrameOrientation.EFI));
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log(timeStepResults.results[indTarget].stateMapRaw
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    console.log("light-time");
                     console.log(timeStepResults.results[indTarget].stateMapLightTime
-                        .get(FrameCenter.HELIOCENTER)
-                        ?.get(FrameOrientation.EFI));
-                    }
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    console.log("aberrationcla");
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationCla
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationRel
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                }
             }
         });
     });

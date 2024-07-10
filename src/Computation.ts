@@ -14,6 +14,7 @@ import { MathUtils } from "./MathUtils";
 import { constants } from "./SSIE/Constants";
 import { EarthPosition } from "./Wgs84";
 import { TargetResults, TimeStepResults } from "./Results";
+import { Aberration } from "./Corrections/Aberration";
 
 /**
  * Class organizing the high-level computation.
@@ -78,6 +79,7 @@ export class Computation {
     computeTimeStep(timeStamp : TimeStamp) : TimeStepResults {
         // Perform time correlations and EOP interpolation.
         const eopParams : EopParams = EopComputation.computeEopData(timeStamp, this.timeCorrelation);
+
         // We integrate the Solar System regardless of target type. Note that SSIE implements
         // a cache so that the integration is done exactly once for each unique time stamp.
         const integrationState : IntegrationState = this.engine.get(eopParams.timeStampTdb.getJulian());
@@ -93,8 +95,8 @@ export class Computation {
             const targetResults : TargetResults = this.computeTarget(timeStamp, target, eopParams, 
                 solarParams, integrationState);
 
-                targets.push(target);
-                results.push(targetResults);
+            targets.push(target);
+            results.push(targetResults);
         }
 
         return {
@@ -122,63 +124,56 @@ export class Computation {
     computeTarget(timeStamp : TimeStamp, target : Target, eopParams : EopParams,
         solarParams : SolarParams, state : IntegrationState) : TargetResults {
 
+        // Initialize frame conversions class.
         const frameConversions : FrameConversions = new FrameConversions(
             eopParams, <EarthPosition> this.observer.earthPos, solarParams
         );
 
+        // Compute raw position without any corrections.
         const stateVectorRaw : StateVector = this.computeStateVector(timeStamp, target, eopParams, 
             solarParams, state);
         const stateMapRaw : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
             frameConversions.getAll(stateVectorRaw);
 
+        // Correction 1 : Light-Time
+        let stateVectorCorrected : StateVector = stateVectorRaw;
 
+        for (let iter = 0; iter < 3; iter ++) {
+            const lightTimeDays : number = this.computeLightTime(this.observer.state, 
+                stateVectorCorrected, frameConversions);
 
-        const stateVectorObs : StateVector = this.observer.state;
+            const timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+                timeStamp.getConvention(), timeStamp.getJulian() - lightTimeDays);
 
-        const targetObs : StateVector | undefined = stateMapRaw.get(this.observer.state.frameCenter)
-            ?.get(this.observer.state.frameOrientation);
-        if (targetObs === undefined) {
-            throw Error('foo');
+            const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
+
+            stateVectorCorrected = this.computeStateVector(timeStamp, target, eopParams, 
+                solarParams, integrationState);
         }
 
-        // Speed of light m/s.
-        const c = 299792458;
-        const distance : number = MathUtils.norm(MathUtils.vecDiff(
-            stateVectorRaw.position, targetObs.position
-        ));
-        const lightTimeDays = distance / (c * 86400);
-        const timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
-            timeStamp.getConvention(), timeStamp.getJulian() - lightTimeDays);
+        // Correction 2: Aberration.
+        stateVectorCorrected = frameConversions.translateTo(stateVectorCorrected, FrameCenter.BODY_CENTER);
 
-        const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
+        let observerSsb = frameConversions.rotateTo(this.observer.state, FrameOrientation.J2000_EQ);
+        observerSsb = frameConversions.translateTo(observerSsb, FrameCenter.SSB);
 
-        const stateVectorCorrected : StateVector = this.computeStateVector(timeStamp, target, eopParams, 
-            solarParams, integrationState);
-
-
-        console.log(lightTimeDays);
-
+        const stateVectorAberrationCla : StateVector = Aberration.aberrationStellarCla(stateVectorCorrected,
+            solarParams.geoState);
+        const stateVectorAberrationRel : StateVector = Aberration.aberrationStellarRel(stateVectorCorrected,
+            observerSsb);
 
         const stateMapCorrected : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
             frameConversions.getAll(stateVectorCorrected);
-
-        //const targetObs : StateVector = (Map<FrameOrientation, StateVector> stateMapRaw.get(this.observer.state.frameCenter)?
-        //).get(this.observer.state.frameOrientation);
-
-/*
-        // Fill results by converting the state vector to every frame.
-        if (stateVector != null) {
-            const targetResults : TargetResults = {
-                stateMapRaw : frameConversions.getAll(stateVector)
-            }
-            return targetResults;
-        } else {
-            throw Error("Target type " + target.type + " not implemented.");
-        }*/
+        const stateMapAberrationCla : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
+        frameConversions.getAll(stateVectorAberrationCla);
+        const stateMapAberrationRel : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
+        frameConversions.getAll(stateVectorAberrationRel);
 
         return {
             stateMapRaw : stateMapRaw,
-            stateMapLightTime : stateMapCorrected
+            stateMapLightTime : stateMapCorrected,
+            stateMapAberrationCla : stateMapAberrationCla,
+            stateMapAberrationRel : stateMapAberrationRel
         };
     }
 
@@ -247,5 +242,18 @@ export class Computation {
             velocity : velTarget,
             timeStamp : timeStamp
         }
+    }
+
+    computeLightTime(first : StateVector, second : StateVector, 
+        frameConversions : FrameConversions) : number {
+        second = frameConversions.translateTo(second, first.frameCenter);
+        second = frameConversions.rotateTo(second, first.frameOrientation); 
+
+        // Speed of light m/s.
+        const c = 299792458;
+        const distance = MathUtils.norm(MathUtils.vecDiff(first.position, second.position));
+        const lightTimeDays = distance / (c * 86400);
+
+        return lightTimeDays;
     }
 }
