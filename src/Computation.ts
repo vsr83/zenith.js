@@ -142,14 +142,18 @@ export class Computation {
             const lightTimeDays : number = this.computeLightTime(this.observer.state, 
                 stateVectorCorrected, frameConversions);
 
-            const timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+            let timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
                 timeStamp.getConvention(), timeStamp.getJulian() - lightTimeDays);
+            timeStampCorrected = timeStampCorrected.changeTo(this.timeCorrelation, timeStampCorrected.getFormat(),
+                TimeConvention.TIME_TDB);
 
             const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
 
             stateVectorCorrected = this.computeStateVector(timeStamp, target, eopParams, 
                 solarParams, integrationState);
         }
+        console.log("corrre");
+        console.log(stateVectorCorrected)
 
         // Correction 2: Aberration.
         stateVectorCorrected = frameConversions.translateTo(stateVectorCorrected, FrameCenter.BODY_CENTER);
@@ -161,6 +165,9 @@ export class Computation {
             solarParams.geoState);
         const stateVectorAberrationRel : StateVector = Aberration.aberrationStellarRel(stateVectorCorrected,
             observerSsb);
+
+        //const rCorr = Aberration.aberrationStellarCart(timeStamp.getJulian(), stateVectorCorrected.position, [0,0,0]);
+        //stateVectorAberrationCla.position = rCorr;
 
         const stateMapCorrected : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
             frameConversions.getAll(stateVectorCorrected);
@@ -244,6 +251,17 @@ export class Computation {
         }
     }
 
+    /**
+     * Compute light-time between two state vectors.
+     * 
+     * @param {StateVector} first
+     *      The first state vector. 
+     * @param {StateVector} second 
+     *      The second state vector.
+     * @param {FrameConversions} frameConversions 
+     *      Object used for frame conversions.
+     * @returns {number} The light time in days.
+     */
     computeLightTime(first : StateVector, second : StateVector, 
         frameConversions : FrameConversions) : number {
         second = frameConversions.translateTo(second, first.frameCenter);

@@ -8,12 +8,15 @@ import { MathUtils } from "./MathUtils";
  */
 export class Propagation {
     /**
-     * Propagate linear
+     * Propagate state vector linearly according to velocity in the frame
      * 
-     * @param corr 
-     * @param observerInfo 
-     * @param timeStamp 
-     * @returns 
+     * @param {TimeCorrelation} corr
+     *      Time correlation used to compute time difference between time stamps. 
+     * @param {StateVector} stateVector 
+     *      State vector to be propagated.
+     * @param {TimeStamp} timeStamp 
+     *      Target time stamp.
+     * @returns {StateVector} Propagated state vector.
      */
     static propagateLinear(corr : TimeCorrelation, stateVector : StateVector, timeStamp : TimeStamp) : StateVector {
         const numSec = stateVector.timeStamp.daysTo(corr, timeStamp) * 86400;

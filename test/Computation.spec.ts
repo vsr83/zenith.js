@@ -79,6 +79,20 @@ describe('Computation', function() {
                     console.log(timeStepResults.results[indTarget].stateMapAberrationRel
                         .get(FrameCenter.PLANET_TOPO)
                         ?.get(FrameOrientation.ENU));
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationRel
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log(timeStepResults.results[indTarget].stateMapLightTime
+                        .get(FrameCenter.BODY_CENTER)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationCla
+                        .get(FrameCenter.BODY_CENTER)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log("fooo");
+                    console.log(timeStepResults.results[indTarget].stateMapLightTime
+                        .get(FrameCenter.BODY_CENTER)
+                        ?.get(FrameOrientation.J2000_EQ));
+            
                 }
             }
         });

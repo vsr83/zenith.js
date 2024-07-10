@@ -83,6 +83,7 @@ export class Engine {
         integration.integrateSteps(numStepsCoarse);
         
         const deltaJDfine = deltaJD - integration.getIntegrationState().deltaT;
+
         if (Math.abs(deltaJDfine) > 1.0 / 86400.0e4) {
             integrationConf.stepSize = deltaJDfine;
             integration.initialize(integration.getIntegrationState(), integrationConf);
