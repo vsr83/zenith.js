@@ -16,7 +16,7 @@ import { Target } from '../src';
 import { ComputationInfo } from '../src/Configuration/ComputationConf';
 import { targetList, targetMap } from '../src/Configuration/TargetConf';
 import { Computation } from '../src/Computation';
-import { TimeStepResults, TargetResults } from '../src/Results';
+import { TimeStepResults, TargetResults, PostProcessing } from '../src/Results';
 
 function checkOsv(val : StateVector, exp : StateVector, posTol : number, velTol : number) {
     assert.equal(val.frameCenter, exp.frameCenter);
@@ -91,8 +91,7 @@ describe('Computation', function() {
                     console.log("fooo");
                     console.log(timeStepResults.results[indTarget].stateMapLightTime
                         .get(FrameCenter.BODY_CENTER)
-                        ?.get(FrameOrientation.J2000_EQ));
-            
+                        ?.get(FrameOrientation.J2000_EQ)); 
                 }
             }
         });

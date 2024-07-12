@@ -15,6 +15,8 @@ import { constants } from "./SSIE/Constants";
 import { EarthPosition } from "./Wgs84";
 import { TargetResults, TimeStepResults } from "./Results";
 import { Aberration } from "./Corrections/Aberration";
+import { PostProcessing } from "./Results";
+import { Angles } from "./Angles";
 
 /**
  * Class organizing the high-level computation.
@@ -89,11 +91,23 @@ export class Computation {
         const targets : Target[] = [];
         const results : TargetResults[] = [];
 
+        // Initialize frame conversions class.
+        const frameConversions : FrameConversions = new FrameConversions(
+            eopParams, <EarthPosition> this.observer.earthPos, solarParams
+        );
+
         for (let indTarget = 0; indTarget < this.targetList.length; indTarget++) {
             const target : Target = this.targetList[indTarget];
 
             const targetResults : TargetResults = this.computeTarget(timeStamp, target, eopParams, 
                 solarParams, integrationState);
+
+            console.log("R.A.___(ICRF)___DEC " + 
+            PostProcessing.computeRaDeclIcrf(targetResults, this.observer, frameConversions));
+            console.log("R.A.__(airless-appar)__DEC " + 
+            PostProcessing.computeRaDeclApparent(targetResults, this.observer, frameConversions));
+            console.log("Azimuth__(a-app)__Elevation " + 
+            PostProcessing.computeAzElAirless(targetResults, this.observer, frameConversions));
 
             targets.push(target);
             results.push(targetResults);
@@ -152,8 +166,6 @@ export class Computation {
             stateVectorCorrected = this.computeStateVector(timeStamp, target, eopParams, 
                 solarParams, integrationState);
         }
-        console.log("corrre");
-        console.log(stateVectorCorrected)
 
         // Correction 2: Aberration.
         stateVectorCorrected = frameConversions.translateTo(stateVectorCorrected, FrameCenter.BODY_CENTER);
@@ -162,10 +174,10 @@ export class Computation {
         observerSsb = frameConversions.translateTo(observerSsb, FrameCenter.SSB);
 
         const stateVectorAberrationCla : StateVector = Aberration.aberrationStellarCla(stateVectorCorrected,
-            solarParams.geoState);
+            observerSsb);
         const stateVectorAberrationRel : StateVector = Aberration.aberrationStellarRel(stateVectorCorrected,
             observerSsb);
-
+    
         //const rCorr = Aberration.aberrationStellarCart(timeStamp.getJulian(), stateVectorCorrected.position, [0,0,0]);
         //stateVectorAberrationCla.position = rCorr;
 
