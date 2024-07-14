@@ -6,8 +6,12 @@ import { Target } from "./Configuration/TargetConf";
 import { ObserverInfo } from "./Configuration/ObserverConf";
 import { MathUtils } from "./MathUtils";
 import { Angles } from "./Angles";
+import { EopParams, SolarParams } from "./EopParams";
+import { ComputationInfo } from "./Configuration/ComputationConf";
+import { EarthPosition } from "./Wgs84";
 
 /**
+ * 
  * Computation results for single target for a single time step.
  */
 export interface TargetResults {
@@ -22,6 +26,27 @@ export interface TargetResults {
     stateMapAberrationCla : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
     stateMapAberrationRel : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
     //stateMapAberration : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
+};
+
+/**
+ * Observer table compatible with JPL Horizons.
+ */
+export interface ObserverTable {
+    // Astrometric right ascension and declination with respect to the observer (deg). 
+    // Includes only correction for light-time.
+    raDeclAstrometric : number[];
+
+    // Airless apparent right ascension and declination with respect to the observer (deg). 
+    // Corrected for light-time, aberration, precession, nutation and polar motion.
+    raDeclApparent : number[];
+
+    // Rates of airless apparent right ascension and declination (arcseconds per hour).
+    // dRA/dt is multiplied by the cosine of declination to obtain a linear rate. 
+    raDeclRates : number[];
+
+    // Airless apparent azimuth and elevation with respect to the observer (deg). 
+    // Corrected for light-time, aberration, precession, nutation and polar motion.
+    azElApparent : number[];
 };
 
 /**
@@ -42,9 +67,23 @@ export interface TimeStepResults {
  * Class for computing results.
  */
 export class PostProcessing {
+    // Computation info.
+    computationInfo : ComputationInfo;
+
     /**
-     * Compute astrometric right ascension with respect to the observer. Includes only 
-     * correction for light-time.
+     * Public constructor.
+     * 
+     * @param {ComputationInfo} computationInfo 
+     *      Computation info.
+     */
+    constructor(computationInfo : ComputationInfo, eopParams : EopParams, 
+        solarParams : SolarParams) {
+        this.computationInfo = computationInfo;
+    }
+
+    /**
+     * Compute astrometric right ascension and declination with respect to the observer. 
+     * Includes only correction for light-time.
      * 
      * @param {TargetResults} results
      *      Target results.
@@ -70,8 +109,8 @@ export class PostProcessing {
     }
 
     /**
-     * Compute airless apparent right ascension with respect to the observer. Corrected 
-     * for light-time, aberration, precession and nutation.
+     * Compute airless apparent right ascension and declination with respect to the observer. 
+     * Corrected for light-time, aberration, precession and nutation.
      * 
      * @param {TargetResults} results
      *      Target results.
@@ -93,6 +132,62 @@ export class PostProcessing {
         return [
             Angles.limitAngleDeg(MathUtils.atan2d(targetPosition[1], targetPosition[0])),
             MathUtils.asind(targetPosition[2] / MathUtils.norm(targetPosition))
+        ];
+
+    }
+
+    /**
+     * Compute airless apparent right ascension declination rates with respect to the 
+     * observer. Corrected for light-time, aberration, precession and nutation.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Array of right ascension and declination rates (arcsec/hour).
+     */
+    static computeRaDeclRate(results : TargetResults, observerInfo : ObserverInfo, frameConversions : FrameConversions) : 
+    number[] {
+        let observer : StateVector = observerInfo.state;
+        observer = frameConversions.rotateTo(observer, FrameOrientation.TOD);
+        const target : StateVector = <StateVector>results.stateMapAberrationRel.get(observer.frameCenter)
+            ?.get(FrameOrientation.TOD);
+
+        const targetPosition : number[] = MathUtils.vecDiff(target.position, observer.position);
+        const targetVelocity : number[] = MathUtils.vecDiff(target.velocity, observer.velocity);
+        const targetDistance = MathUtils.norm(targetPosition);
+        console.log("vel " + MathUtils.norm(targetVelocity) + " " + targetDistance);
+
+        const RA = Angles.limitAngleDeg(MathUtils.atan2d(targetPosition[1], targetPosition[0]));
+        const decl = MathUtils.asind(targetPosition[2] / MathUtils.norm(targetPosition));
+
+
+        // x = r cos(DE) cos(RA) 
+        // y = r cos(DE) sin(RA) 
+        // z = r sin(DE)
+        // dx/dDE = -r sin(DE) cos(RA), dx/dRA = - r cos(DE) sin(RA)
+        // dy/dDE = -r sin(DE) sin(RA), dy/dRA =   r cos(DE) cos(RA)
+        // dz/dDE =  r cos(DE)        , dz/dRA =   0
+
+        const unitDe : number[] = [
+            - MathUtils.sind(decl) * MathUtils.cosd(RA),
+            - MathUtils.sind(decl) * MathUtils.sind(RA),
+              MathUtils.cosd(decl)
+        ];
+        const unitRa : number[] = [
+            - MathUtils.cosd(decl) * MathUtils.sind(RA),
+              MathUtils.cosd(decl) * MathUtils.cosd(RA),
+              0
+        ];
+        // Velocity on the unit sphere (deg / s) = (arcsec / hour).
+        const velUnit = MathUtils.vecMul(targetVelocity, 
+            (3600 * 3600 * 180 / Math.PI) / targetDistance);
+
+        return [
+            MathUtils.dot(velUnit, unitRa) / MathUtils.cosd(decl),
+            MathUtils.dot(velUnit, unitDe)
         ];
 
     }

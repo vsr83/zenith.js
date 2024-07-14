@@ -13,7 +13,7 @@ import { StateVector } from "./StateVector";
 import { MathUtils } from "./MathUtils";
 import { constants } from "./SSIE/Constants";
 import { EarthPosition } from "./Wgs84";
-import { TargetResults, TimeStepResults } from "./Results";
+import { TargetResults, TimeStepResults, ObserverTable } from "./Results";
 import { Aberration } from "./Corrections/Aberration";
 import { PostProcessing } from "./Results";
 import { Angles } from "./Angles";
@@ -33,7 +33,9 @@ export class Computation {
     // Time correlation.
     timeCorrelation : TimeCorrelation;
     // Solar System Integration Engine (SSIE).
-    engine : Engine;    
+    engine : Engine;
+    // Post-processing.
+    postProcessing : PostProcessing;
 
     /**
      * Public constructor.
@@ -102,12 +104,17 @@ export class Computation {
             const targetResults : TargetResults = this.computeTarget(timeStamp, target, eopParams, 
                 solarParams, integrationState);
 
-            console.log("R.A.___(ICRF)___DEC " + 
-            PostProcessing.computeRaDeclIcrf(targetResults, this.observer, frameConversions));
-            console.log("R.A.__(airless-appar)__DEC " + 
-            PostProcessing.computeRaDeclApparent(targetResults, this.observer, frameConversions));
-            console.log("Azimuth__(a-app)__Elevation " + 
-            PostProcessing.computeAzElAirless(targetResults, this.observer, frameConversions));
+            const observerTable : ObserverTable = this.computeObserverTable(
+                targetResults, eopParams, solarParams
+            );
+            console.log(observerTable);
+
+            //console.log("R.A.___(ICRF)___DEC " + 
+            //PostProcessing.computeRaDeclIcrf(targetResults, this.observer, frameConversions));
+            //console.log("R.A.__(airless-appar)__DEC " + 
+            //PostProcessing.computeRaDeclApparent(targetResults, this.observer, frameConversions));
+            //console.log("Azimuth__(a-app)__Elevation " + 
+            //PostProcessing.computeAzElAirless(targetResults, this.observer, frameConversions));
 
             targets.push(target);
             results.push(targetResults);
@@ -192,7 +199,7 @@ export class Computation {
             stateMapRaw : stateMapRaw,
             stateMapLightTime : stateMapCorrected,
             stateMapAberrationCla : stateMapAberrationCla,
-            stateMapAberrationRel : stateMapAberrationRel
+            stateMapAberrationRel : stateMapAberrationRel,
         };
     }
 
@@ -285,5 +292,35 @@ export class Computation {
         const lightTimeDays = distance / (c * 86400);
 
         return lightTimeDays;
+    }
+
+    /**
+     * Compute observer table.
+     * 
+     * @param {TargetResults} targetResults 
+     *      Target results.
+     * @param {EopParams} eopParams 
+     *      Earth Orientation Parameters.
+     * @param {SolarParams} solarParams 
+     *      Solar System parameters.
+     * @returns {ObserverTable} Observer table. 
+     */
+    computeObserverTable(targetResults : TargetResults, eopParams : EopParams,
+        solarParams : SolarParams) : ObserverTable {
+        const frameConversions : FrameConversions = new FrameConversions(
+            eopParams, <EarthPosition> this.observer.earthPos, solarParams
+        );
+
+        return {
+            raDeclAstrometric : PostProcessing.computeRaDeclIcrf(targetResults, 
+                this.observer, frameConversions),
+            raDeclApparent : PostProcessing.computeRaDeclApparent(targetResults,
+                this.observer, frameConversions),
+            raDeclRates : PostProcessing.computeRaDeclRate(targetResults,
+                this.observer, frameConversions),
+            azElApparent : PostProcessing.computeAzElAirless(targetResults,
+                this.observer, frameConversions)
+        };
+
     }
 }
