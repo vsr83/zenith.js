@@ -16,8 +16,6 @@ import { EarthPosition } from "./Wgs84";
 import { TargetResults, TimeStepResults, ObserverTable } from "./Results";
 import { Aberration } from "./Corrections/Aberration";
 import { PostProcessing } from "./Results";
-import { Angles } from "./Angles";
-import { Libration } from "./SSIE/Libration";
 
 /**
  * Class organizing the high-level computation.
@@ -325,7 +323,17 @@ export class Computation {
                 frameConversions),
             helLonLat : PostProcessing.computeHelLonLat(targetResults),
             rRdot : PostProcessing.computeRrDot(targetResults),
-            deltaDeltaDot : PostProcessing.computeDeltaDeltaDot(targetResults, this.observer)
+            deltaDeltaDot : PostProcessing.computeDeltaDeltaDot(targetResults, this.observer),
+            elongationSot : PostProcessing.computeElongationSot(targetResults, this.observer,
+                frameConversions),
+            elongationSto : PostProcessing.computeElongationSto(targetResults, this.observer,
+                frameConversions),
+            trueAnom : PostProcessing.computeTrueAnomaly(targetResults),
+            localAppHourAngle : PostProcessing.computeLocalAppHourAngle(targetResults, this.observer,
+                frameConversions),
+            phi : PostProcessing.computePhase(targetResults, this.observer, frameConversions),
+            illuminatedFraction : PostProcessing.computeIlluminatedFrac(targetResults, this.observer,
+                frameConversions)
         };
 
     }

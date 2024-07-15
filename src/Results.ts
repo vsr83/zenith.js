@@ -10,6 +10,7 @@ import { EopParams, SolarParams } from "./EopParams";
 import { ComputationInfo } from "./Configuration/ComputationConf";
 import { Wgs84, EarthPosition } from "./Wgs84";
 import { constants } from "./SSIE/Constants";
+import { Rotations } from "./Rotations";
 
 /**
  * 
@@ -36,53 +37,119 @@ export interface TargetResults {
  * Observer table compatible with JPL Horizons.
  */
 export interface ObserverTable {
-    // Astrometric right ascension and declination with respect to the observer (deg). 
+    // 1. Astrometric right ascension and declination with respect to the observer (deg). 
     // Includes only correction for light-time.
     raDeclAstrometric : number[];
 
-    // Airless apparent right ascension and declination with respect to the observer (deg). 
+    // 2. Airless apparent right ascension and declination with respect to the observer (deg). 
     // Corrected for light-time, aberration, precession, nutation and polar motion.
     raDeclApparent : number[];
 
-    // Rates of airless apparent right ascension and declination (arcseconds per hour).
+    // 3. Rates of airless apparent right ascension and declination (arcseconds per hour).
     // dRA/dt is multiplied by the cosine of declination to obtain a linear rate. 
     raDeclRates : number[];
 
-    // Airless apparent azimuth and elevation with respect to the observer (deg). 
+    // 4. Airless apparent azimuth and elevation with respect to the observer (deg). 
     // Corrected for light-time, aberration, precession, nutation and polar motion.
     azElApparent : number[];
 
-    // Rates of airless apparent azimuth and elevation with respect to the observer 
+    // 5. Rates of airless apparent azimuth and elevation with respect to the observer 
     // (arcseconds per minute).Corrected for light-time, aberration, precession, nutation 
     //and polar motion.
     azElRates : number[];
 
     // TODO: Satellite apparent differential coordinates.
 
-    // Local Apparent Sidereal Time (decimal hours).
+    // 7. Local Apparent Sidereal Time (decimal hours).
     localGast : number;
 
-    // One-way down-leg light-time from the target center to the observer (minutes).
-    lightTimeMinutes : number;
+    // 8. Airmass & extinction
 
-    // The difference between TDB and UTC timestamps (seconds).
-    tdbUtcDiff : number;
+    // 9. Visual mag. & Surface Brght
 
+    // 10. Illuminated fraction
+    illuminatedFraction : number,
+
+    // 11. Defect of illumination.
+
+    // 12. Satellite angular separ/vis.
+
+    // 13. Target angular diameter.
+
+    // 14. Obserer sub-lon & sub-latitude.
     // TODO
     obsSubLonLat : number[],
 
-    // Heliocentric longitude and latitude of the target center. Corrected for light-time
+    // 15. Sun sub-longitude & sub-latitude.
+
+    // 16. Sub-Sun position angle & distance.
+
+    // 17. North Pole position angle & distance.
+
+    // 18. Heliocentric longitude and latitude of the target center. Corrected for light-time
     // (degrees).
     helLonLat : number[]
 
-    // Sun's apparent range and range rate. Corrected for light-time (au and km/s).
+    // 19. Sun's apparent range and range rate. Corrected for light-time (au and km/s).
     rRdot : number[],
 
-    // Apparent range and range rate of the target center and the observer (au and km/s).
+    // 20. Apparent range and range rate of the target center and the observer (au and km/s).
     deltaDeltaDot : number[];
 
-    // Elongation angle Sun-Observer-Target. 
+    // 21. One-way down-leg light-time from the target center to the observer (minutes).
+    lightTimeMinutes : number;
+
+    // 22. Speed wrt Sun & observer
+
+    // 23. Elongation angle Sun-Observer-Target. 
     elongationSot : number;
+
+    // 24. Elongation angle Sun-Target-Observer. 
+    elongationSto : number;
+
+    // 25. Target-Observer-Moon angle/ Illum%
+
+    // 26. Observer-Primary Target angle.
+
+    // 27. Sun-Target radial & -vel pos. angle.
+
+    // 28. Orbit plane angle.
+
+    // 29. Constellation ID.
+
+    // 30. The difference between TDB and UTC timestamps (seconds).
+    tdbUtcDiff : number;
+
+    // 31. Observer ecliptic lon. & lat.
+
+    // 32. North pole RA & DEC
+
+    // 33. Galactic longitude and latitude.
+
+    // 34. Local apparent solar time.
+
+    // 35. Earth->obs. site light-time.
+
+    // 36 - 40: Errors
+
+    // 41. Heliocentric true anomaly (degrees). Corrected for light-time.
+    trueAnom : number;
+
+    // 42. Local apparent hour angle (degrees).
+    localAppHourAngle : number;
+
+    // 43. Phase angle & bisector.
+    phi : number;
+
+    // 44. Apparent longitude Sun (L_s)
+
+    // 45. Inertial apparent RA & DEC
+
+    // 46. Rate: Inertial RA / DEC
+
+    // 47. Sky motion: rate & angles.
+
+    // 48. Lunar sky-brightness & sky SNR.
 };
 
 /**
@@ -423,26 +490,240 @@ export class PostProcessing {
      * 
      * @param {TargetResults} results
      *      Target results.
-     * @returns {number[]} Distance from the target center to the observer (au) and 
-     *      the rate of the change of distance (km/s).
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions.
+     * @returns {number[]} Sun-Observer-Target elongation in degrees.
      */
-    static computeElongationSot(results : TargetResults, observerInfo : ObserverInfo) : 
-    number[] {
+    static computeElongationSot(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : 
+    number {
         let stateVectorTarget : StateVector = <StateVector> results.stateMapLightTime
             .get(observerInfo.state.frameCenter)
             ?.get(observerInfo.state.frameOrientation);
+
+        // TBD: Light-time corrections?
+        let stateVectorSun : StateVector = {
+            frameCenter : FrameCenter.HELIOCENTER,
+            frameOrientation : observerInfo.state.frameOrientation,
+            position : [0, 0, 0],
+            velocity : [0, 0, 0],
+            timeStamp : stateVectorTarget.timeStamp
+        };
+        stateVectorSun = frameConversions.translateTo(stateVectorSun, observerInfo.state.frameCenter);
+
         let stateVectorObserver : StateVector = observerInfo.state;
 
-        const auMeters = constants.au * 1000.0;
-        const position : number[] = MathUtils.vecDiff(stateVectorTarget.position,
-            stateVectorObserver.position);
-        const velocity : number[] = MathUtils.vecDiff(stateVectorTarget.velocity,
-            stateVectorObserver.velocity);
-        const rMeters = MathUtils.norm(position);
-        const delta : number = rMeters / auMeters;
-        const deltaDot : number = MathUtils.dot(position, velocity)
-                            / (1000.0 * rMeters);
+        const posSun : number[] = MathUtils.normalize(
+            MathUtils.vecDiff(stateVectorSun.position, stateVectorObserver.position));
+        const posTarget : number[] = MathUtils.normalize(
+            MathUtils.vecDiff(stateVectorTarget.position, stateVectorObserver.position));
 
-        return [delta, deltaDot];
+        return MathUtils.acosd(MathUtils.dot(posSun, posTarget));
+    }
+
+    /**
+     * Compute elongation angle Sun-Target-Observer.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Sun-Target-Observer elongation in degrees.
+     */
+    static computeElongationSto(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : 
+    number {
+        let stateVectorTarget : StateVector = <StateVector> results.stateMapLightTime
+            .get(observerInfo.state.frameCenter)
+            ?.get(observerInfo.state.frameOrientation);
+
+        // TBD: Light-time corrections?
+        let stateVectorSun : StateVector = {
+            frameCenter : FrameCenter.HELIOCENTER,
+            frameOrientation : observerInfo.state.frameOrientation,
+            position : [0, 0, 0],
+            velocity : [0, 0, 0],
+            timeStamp : stateVectorTarget.timeStamp
+        };
+        stateVectorSun = frameConversions.translateTo(stateVectorSun, observerInfo.state.frameCenter);
+
+        let stateVectorObserver : StateVector = observerInfo.state;
+
+        const posSun : number[] = MathUtils.normalize(
+            MathUtils.vecDiff(stateVectorSun.position, stateVectorTarget.position));
+        const posObs : number[] = MathUtils.normalize(
+            MathUtils.vecDiff(stateVectorObserver.position, stateVectorTarget.position));
+
+        return MathUtils.acosd(MathUtils.dot(posSun, posObs));
+    }
+
+    /**
+     * Compute Heliocentric true anomaly.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @returns {number} Heliocentric true anomaly (degrees).
+     */
+    static computeTrueAnomaly(results : TargetResults) : number {
+        const incl_min = 1e-7;
+
+        const r : number[] = (<StateVector> results.stateMapLightTime.get(FrameCenter.HELIOCENTER)?.get(FrameOrientation.J2000_EQ)
+            )?.position;
+        const v : number[] = (<StateVector> results.stateMapLightTime.get(FrameCenter.HELIOCENTER)?.get(FrameOrientation.J2000_EQ)
+            )?.velocity;
+
+        // Standard gravitational parameter for Sun (m^3/s^2).
+        const mu = 1.32712440018e20;
+
+        const kepler = {};
+    
+        // Angular momentum per unit mass.
+        const k = MathUtils.cross(r, v);
+        // Eccentricity vector.
+        const ecc = MathUtils.vecDiff(
+            MathUtils.vecMul(MathUtils.cross(v, k), 1 / mu), MathUtils.vecMul(r, 1/MathUtils.norm(r)));
+        const ecc_norm = MathUtils.norm(ecc);
+        
+        // Inclination
+        const incl = MathUtils.acosd(k[2] / MathUtils.norm(k));
+        
+        // Energy integral.
+        const h = 0.5 * MathUtils.norm(v) * MathUtils.norm(v) - mu / MathUtils.norm(r);
+        
+        // Semi-major axis.
+        const a = -mu / (2 * h);
+        const b = a * Math.sqrt(1 - ecc_norm * ecc_norm);
+        
+        // Longitude of the ascending node.
+        const Omega = MathUtils.atan2d(k[0], -k[1]);
+        
+        // Argument of periapsis.
+        let omega = 0;
+    
+        // When inclination is close to zero, we wish to compute the argument of periapsis
+        // on the XY-plane and avoid division by zero:
+        if (incl < incl_min)
+        {
+            omega = MathUtils.atan2d(ecc[1], ecc[0]) - Omega;
+        }
+        else
+        {
+            // We wish to avoid division by zero and thus use the formula, which has larger
+            // absolute value for the denominator:
+            if (Math.abs(MathUtils.sind(Omega)) < Math.abs(MathUtils.cosd(Omega)))
+            {
+                const asc_y = ecc[2] / MathUtils.sind(incl);
+                const asc_x = (1 / MathUtils.cosd(Omega)) * (ecc[0] 
+                            + MathUtils.sind(Omega) * MathUtils.cosd(incl) * ecc[2] / MathUtils.sind(incl));
+        
+                omega = MathUtils.atan2d(asc_y, asc_x);
+            }
+            else
+            {
+                const asc_y = ecc[2] / MathUtils.sind(incl);
+                const asc_x = (1 / MathUtils.sind(Omega)) * (ecc[1] 
+                            - MathUtils.cosd(Omega) * MathUtils.cosd(incl) * ecc[2] / MathUtils.sind(incl));
+        
+                omega = MathUtils.atan2d(asc_y, asc_x)
+            }
+        }
+        
+        // Eccentric anomaly
+        const r_orbital = Rotations.rotateCart3d(Rotations.rotateCart1d(
+            Rotations.rotateCart3d(r, Omega), incl), omega);
+        const E = MathUtils.atan2d(r_orbital[1] / b, r_orbital[0] / a + ecc_norm);
+    
+        // Mean anomaly
+        const M = E - (180/Math.PI) * ecc_norm * MathUtils.sind(E);
+        
+        // Natural anomaly
+        const xu = (MathUtils.cosd(E) - ecc_norm) / (1 - ecc_norm * MathUtils.cosd(E));
+        const yu = Math.sqrt(1 - ecc_norm * ecc_norm) * MathUtils.sind(E) / (1 - ecc_norm * MathUtils.cosd(E));
+        
+        const f = Angles.limitAngleDeg(MathUtils.atan2d(yu, xu));
+        return f;
+    }
+
+    /**
+     * Compute local apparent hour angle of the target.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number} Local apparent hour angle.
+     */
+    static computeLocalAppHourAngle(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : number {
+        let stateVectorTarget : StateVector = <StateVector> results.stateMapAberrationRel
+            .get(FrameCenter.BODY_CENTER)
+            ?.get(FrameOrientation.EFI);
+        const earthPosTarget : EarthPosition = Wgs84.coordEfiWgs84(stateVectorTarget.position, 
+            10, 1e-10, false);
+
+        return Angles.limitAngleDeg180((<EarthPosition> observerInfo.earthPos).lon - earthPosTarget.lon) / 15;
+    }
+
+    /**
+     * Compute phase angle.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Phase angle in degrees.
+     */
+    static computePhase(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : 
+    number {
+        let stateVectorTarget : StateVector = <StateVector> results.stateMapAberrationRel
+            .get(observerInfo.state.frameCenter)
+            ?.get(observerInfo.state.frameOrientation);
+
+        // TBD: Light-time corrections?
+        let stateVectorSun : StateVector = {
+            frameCenter : FrameCenter.HELIOCENTER,
+            frameOrientation : observerInfo.state.frameOrientation,
+            position : [0, 0, 0],
+            velocity : [0, 0, 0],
+            timeStamp : stateVectorTarget.timeStamp
+        };
+        stateVectorSun = frameConversions.translateTo(stateVectorSun, observerInfo.state.frameCenter);
+
+        let stateVectorObserver : StateVector = observerInfo.state;
+
+        const posSun : number[] = MathUtils.normalize(
+            MathUtils.vecDiff(stateVectorSun.position, stateVectorTarget.position));
+        const posObs : number[] = MathUtils.normalize(
+            MathUtils.vecDiff(stateVectorObserver.position, stateVectorTarget.position));
+
+        return MathUtils.acosd(MathUtils.dot(posSun, posObs));
+    }
+
+    /**
+     * Compute illuminated fraction.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Illuminated fraction.
+     */
+    static computeIlluminatedFrac(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : 
+    number {
+        const phaseAngle : number  = PostProcessing.computePhase(results, observerInfo, 
+            frameConversions);
+        return  0.5 * (1.0 + MathUtils.cosd(phaseAngle));
     }
 }

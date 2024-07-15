@@ -199,6 +199,18 @@ export class MathUtils
     }
 
     /**
+     * Normalize a vector.
+     * 
+     * @param {number[]} u
+     *      Vector to be normalized. 
+     * @returns {number[]} Normalized vector.
+     */
+    static normalize(u : number[]) : number[] {
+        const uNorm = MathUtils.norm(u);
+        return [u[0] / uNorm, u[1] / uNorm, u[2] / uNorm];
+    }
+
+    /**
      * Compute difference of two 3d vectors.
      * 
      * @param {number[]} u 
