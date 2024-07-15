@@ -29,6 +29,8 @@ export interface PolarMotionData {
 export interface EopParams {
     // UT1 timestamp for Earth rotation.
     timeStampUt1 : TimeStamp;
+    // UTC timestamp for Earth rotation.
+    timeStampUtc : TimeStamp;
     // TDB timestamp for precession.
     timeStampTdb : TimeStamp;
     // Polar motion parameter (degrees).
@@ -156,8 +158,10 @@ export class EopComputation {
         // Perform time correlation.
         const timeStampUt1 : TimeStamp = timeStamp.changeTo(timeCorrelation, 
             timeStamp.getFormat(), TimeConvention.TIME_UT1);
+        const timeStampUtc : TimeStamp = timeStamp.changeTo(timeCorrelation, 
+            timeStamp.getFormat(), TimeConvention.TIME_UTC);
         const timeStampTdb : TimeStamp = timeStamp.changeTo(timeCorrelation, 
-            timeStamp.getFormat(), TimeConvention.TIME_TDB);
+        timeStamp.getFormat(), TimeConvention.TIME_TDB);
 
         // Compute polar motion.
         const polarData : number[] = EopComputation.interpolateSearch(polarMotionData, 
@@ -175,6 +179,7 @@ export class EopComputation {
 
         return {
             timeStampUt1 : timeStampUt1,
+            timeStampUtc : timeStampUtc,
             timeStampTdb : timeStampTdb,
             polarDx : polarDx,
             polarDy : polarDy,

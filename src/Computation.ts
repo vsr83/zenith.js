@@ -17,6 +17,7 @@ import { TargetResults, TimeStepResults, ObserverTable } from "./Results";
 import { Aberration } from "./Corrections/Aberration";
 import { PostProcessing } from "./Results";
 import { Angles } from "./Angles";
+import { Libration } from "./SSIE/Libration";
 
 /**
  * Class organizing the high-level computation.
@@ -108,14 +109,6 @@ export class Computation {
                 targetResults, eopParams, solarParams
             );
             console.log(observerTable);
-
-            //console.log("R.A.___(ICRF)___DEC " + 
-            //PostProcessing.computeRaDeclIcrf(targetResults, this.observer, frameConversions));
-            //console.log("R.A.__(airless-appar)__DEC " + 
-            //PostProcessing.computeRaDeclApparent(targetResults, this.observer, frameConversions));
-            //console.log("Azimuth__(a-app)__Elevation " + 
-            //PostProcessing.computeAzElAirless(targetResults, this.observer, frameConversions));
-
             targets.push(target);
             results.push(targetResults);
         }
@@ -159,8 +152,9 @@ export class Computation {
         // Correction 1 : Light-Time
         let stateVectorCorrected : StateVector = stateVectorRaw;
 
+        let lightTimeDays : number = 0.0;
         for (let iter = 0; iter < 3; iter ++) {
-            const lightTimeDays : number = this.computeLightTime(this.observer.state, 
+            lightTimeDays = this.computeLightTime(this.observer.state, 
                 stateVectorCorrected, frameConversions);
 
             let timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
@@ -200,6 +194,7 @@ export class Computation {
             stateMapLightTime : stateMapCorrected,
             stateMapAberrationCla : stateMapAberrationCla,
             stateMapAberrationRel : stateMapAberrationRel,
+            lightTimeDays : lightTimeDays
         };
     }
 
@@ -319,7 +314,18 @@ export class Computation {
             raDeclRates : PostProcessing.computeRaDeclRate(targetResults,
                 this.observer, frameConversions),
             azElApparent : PostProcessing.computeAzElAirless(targetResults,
-                this.observer, frameConversions)
+                this.observer, frameConversions),
+            azElRates : PostProcessing.computeAzElRates(targetResults,
+                this.observer, frameConversions),
+            localGast : PostProcessing.computeLocalGast(eopParams, this.observer),
+            lightTimeMinutes : targetResults.lightTimeDays * 1440.0,
+            tdbUtcDiff : (eopParams.timeStampTdb.getJulian() - eopParams.timeStampUtc.getJulian())
+                       * 86400.0,
+            obsSubLonLat : PostProcessing.computeObsSub(targetResults, this.observer, 
+                frameConversions),
+            helLonLat : PostProcessing.computeHelLonLat(targetResults),
+            rRdot : PostProcessing.computeRrDot(targetResults),
+            deltaDeltaDot : PostProcessing.computeDeltaDeltaDot(targetResults, this.observer)
         };
 
     }
