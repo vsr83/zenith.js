@@ -12,6 +12,18 @@ export enum TargetType {
 }
 
 /**
+ * Target metadata for post-processing.
+ */
+export interface TargetMetadata {
+    // Diameter (m).
+    diameter : number; 
+    // Polar radius (m).
+    polarRadius : number;
+    // Equatorial radius (m).
+    eqRadius : number;
+}
+
+/**
  * Class representing a reference to target computation.
  */
 export interface Target {
@@ -32,6 +44,9 @@ export interface Target {
 
     // Reference number given to tht specific computational tool.
     refNumber : number;
+
+    // Optional metadata for post-processing computations.
+    metadata? : TargetMetadata;
 }
 
 export const targetList : Target[] = [];
@@ -61,5 +76,18 @@ function addJplTargets() {
 }
 
 addJplTargets();
+
+targetList[<number> targetMap.get("Sun_SSIE")].metadata     = {diameter : 1.3927e9,  eqRadius : 696350000,polarRadius : 696350000};
+targetList[<number> targetMap.get("Mercury_SSIE")].metadata = {diameter : 4881060,   eqRadius : 2440530,  polarRadius : 2438260};
+targetList[<number> targetMap.get("Venus_SSIE")].metadata   = {diameter : 12104000,  eqRadius : 6051800,  polarRadius : 6051800};
+targetList[<number> targetMap.get("Earth_SSIE")].metadata   = {diameter : 12742000,  eqRadius : 6378137,  polarRadius : 6356752};
+targetList[<number> targetMap.get("Moon_SSIE")].metadata    = {diameter : 3474206,   eqRadius : 1738139,  polarRadius : 1735972};
+targetList[<number> targetMap.get("Mars_SSIE")].metadata    = {diameter : 6792380,   eqRadius : 3396190,  polarRadius : 3376200};
+targetList[<number> targetMap.get("Jupiter_SSIE")].metadata = {diameter : 139820000, eqRadius : 71492000, polarRadius : 66854000};
+targetList[<number> targetMap.get("Saturn_SSIE")].metadata  = {diameter : 116460000, eqRadius : 60268000, polarRadius : 54364000};
+targetList[<number> targetMap.get("Uranus_SSIE")].metadata  = {diameter : 50724000,  eqRadius : 25559000, polarRadius : 24973000};
+targetList[<number> targetMap.get("Neptune_SSIE")].metadata = {diameter : 49244000,  eqRadius : 24764000, polarRadius : 24341000};
+targetList[<number> targetMap.get("Pluto_SSIE")].metadata   = {diameter : 2376600,   eqRadius : 1188000,  polarRadius : 1188000};
+
 console.log(targetList);
 console.log(targetMap);

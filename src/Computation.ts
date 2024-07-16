@@ -188,6 +188,7 @@ export class Computation {
         frameConversions.getAll(stateVectorAberrationRel);
 
         return {
+            target : target,
             stateMapRaw : stateMapRaw,
             stateMapLightTime : stateMapCorrected,
             stateMapAberrationCla : stateMapAberrationCla,
@@ -333,6 +334,14 @@ export class Computation {
                 frameConversions),
             phi : PostProcessing.computePhase(targetResults, this.observer, frameConversions),
             illuminatedFraction : PostProcessing.computeIlluminatedFrac(targetResults, this.observer,
+                frameConversions),
+            angularDiam : 3600.0 * PostProcessing.computeAngularDiam(targetResults, this.observer, 
+                frameConversions),
+            observerEclLonLat : PostProcessing.computeObserverEclLonLat(targetResults, this.observer,
+                frameConversions),
+            raDeclInertialApp : PostProcessing.computeRaDeclInertial(targetResults, this.observer,
+                frameConversions),
+            raDeclInertialRate : PostProcessing.computeRaDeclInertialRate(targetResults, this.observer,
                 frameConversions)
         };
 

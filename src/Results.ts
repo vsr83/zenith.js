@@ -17,6 +17,9 @@ import { Rotations } from "./Rotations";
  * Computation results for single target for a single time step.
  */
 export interface TargetResults {
+    // Target 
+    target : Target;
+
     // Map that associates a state vector to each pair (FrameCenter, FrameOrientation).
     // The positions and velocities are raw without any corrections of any kind.
     stateMapRaw : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
@@ -74,7 +77,8 @@ export interface ObserverTable {
 
     // 12. Satellite angular separ/vis.
 
-    // 13. Target angular diameter.
+    // 13. Target angular equatorial diameter, if fully illuminated (arcseconds).
+    angularDiam : number;
 
     // 14. Obserer sub-lon & sub-latitude.
     // TODO
@@ -121,6 +125,7 @@ export interface ObserverTable {
     tdbUtcDiff : number;
 
     // 31. Observer ecliptic lon. & lat.
+    observerEclLonLat : number[],
 
     // 32. North pole RA & DEC
 
@@ -144,8 +149,10 @@ export interface ObserverTable {
     // 44. Apparent longitude Sun (L_s)
 
     // 45. Inertial apparent RA & DEC
+    raDeclInertialApp : number[];
 
     // 46. Rate: Inertial RA / DEC
+    raDeclInertialRate : number[];
 
     // 47. Sky motion: rate & angles.
 
@@ -291,7 +298,6 @@ export class PostProcessing {
             MathUtils.dot(velUnit, unitRa) / MathUtils.cosd(decl),
             MathUtils.dot(velUnit, unitDe)
         ];
-
     }
 
     /**
@@ -725,5 +731,143 @@ export class PostProcessing {
         const phaseAngle : number  = PostProcessing.computePhase(results, observerInfo, 
             frameConversions);
         return  0.5 * (1.0 + MathUtils.cosd(phaseAngle));
+    }
+
+
+    /**
+     * Compute equatorial angular diameter of the target body.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Angular diameter (degrees).
+     */
+    static computeAngularDiam(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : number {
+        const stateVector : StateVector = <StateVector> results.stateMapAberrationRel
+            .get(observerInfo.state.frameCenter)
+            ?.get(observerInfo.state.frameOrientation);
+
+        const distance : number = MathUtils.norm(MathUtils.vecDiff(
+            stateVector.position, observerInfo.state.position
+        ));
+        if (results.target.metadata === undefined) {
+            return NaN;
+        } else {
+            return 2.0 * MathUtils.atand(results.target.metadata.eqRadius / distance);
+        }
+    }
+
+    /**
+     * Compute observer ecliptic longitude and latitude.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Observer ecliptic longitude and latitude (degrees).
+     */
+    static computeObserverEclLonLat(results : TargetResults, observerInfo : ObserverInfo, 
+        frameConversions : FrameConversions) : number[] {
+        let stateVector : StateVector = <StateVector> results.stateMapAberrationRel
+            .get(observerInfo.state.frameCenter)
+            ?.get(FrameOrientation.TOD);
+
+        // We need ecliptic of date, which is not one of the frames in FrameConversions.
+        stateVector = FrameConversions.rotateEqEcl(stateVector);
+
+        //let stateVectorObs = frameConversions.translateTo(observerInfo.state, FrameCenter.HELIOCENTER);
+        let pos : number [] = stateVector.position;
+
+        return [
+            Angles.limitAngleDeg(MathUtils.atan2d(pos[1], pos[0])),
+            MathUtils.asind(pos[2] / MathUtils.norm(pos))
+        ];
+    }
+
+    /**
+     * Compute astrometric right ascension and declination with respect to the observer. 
+     * Includes only correction for light-time and aberration.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Array of right ascension and declination in degrees with the ranges 
+     * [0, 360] and [-90, 90], respectively.
+     */
+    static computeRaDeclInertial(results : TargetResults, observerInfo : ObserverInfo, frameConversions : FrameConversions) : 
+    number[] {
+        let observer : StateVector = observerInfo.state;
+        observer = frameConversions.rotateTo(observer, FrameOrientation.J2000_EQ);
+        const target : StateVector = <StateVector>results.stateMapAberrationRel.get(observer.frameCenter)
+            ?.get(FrameOrientation.J2000_EQ);
+
+        const targetPosition : number[] = MathUtils.vecDiff(target.position, observer.position);
+        return [
+            Angles.limitAngleDeg(MathUtils.atan2d(targetPosition[1], targetPosition[0])),
+            MathUtils.asind(targetPosition[2] / MathUtils.norm(targetPosition))
+        ];
+    }
+
+    /**
+     * Compute astrometric right ascension and declination with respect to the observer. 
+     * Includes only correction for light-time and aberration.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @param {FrameConversions} frameConversions
+     *      Frame conversions. 
+     * @returns {number[]} Array of right ascension and declination rates (arcsec/hour).
+     */
+    static computeRaDeclInertialRate(results : TargetResults, observerInfo : ObserverInfo, frameConversions : FrameConversions) : 
+    number[] {
+        let observer : StateVector = observerInfo.state;
+        observer = frameConversions.rotateTo(observer, FrameOrientation.J2000_EQ);
+        const target : StateVector = <StateVector>results.stateMapAberrationRel.get(observer.frameCenter)
+            ?.get(FrameOrientation.J2000_EQ);
+
+        const targetPosition : number[] = MathUtils.vecDiff(target.position, observer.position);
+        const targetVelocity : number[] = MathUtils.vecDiff(target.velocity, observer.velocity);
+        const targetDistance = MathUtils.norm(targetPosition);
+
+        const RA = Angles.limitAngleDeg(MathUtils.atan2d(targetPosition[1], targetPosition[0]));
+        const decl = MathUtils.asind(targetPosition[2] / MathUtils.norm(targetPosition));
+
+
+        // x = r cos(DE) cos(RA) 
+        // y = r cos(DE) sin(RA) 
+        // z = r sin(DE)
+        // dx/dDE = -r sin(DE) cos(RA), dx/dRA = - r cos(DE) sin(RA)
+        // dy/dDE = -r sin(DE) sin(RA), dy/dRA =   r cos(DE) cos(RA)
+        // dz/dDE =  r cos(DE)        , dz/dRA =   0
+
+        const unitDe : number[] = [
+            - MathUtils.sind(decl) * MathUtils.cosd(RA),
+            - MathUtils.sind(decl) * MathUtils.sind(RA),
+              MathUtils.cosd(decl)
+        ];
+        const unitRa : number[] = [
+            - MathUtils.cosd(decl) * MathUtils.sind(RA),
+              MathUtils.cosd(decl) * MathUtils.cosd(RA),
+              0
+        ];
+        // Velocity on the unit sphere (deg / s) = 3600 * 3600 (arcsec / hour).
+        const velUnit = MathUtils.vecMul(targetVelocity, 
+            (3600 * 3600 * 180 / Math.PI) / targetDistance);
+
+        return [
+            MathUtils.dot(velUnit, unitRa) / MathUtils.cosd(decl),
+            MathUtils.dot(velUnit, unitDe)
+        ];
     }
 }
