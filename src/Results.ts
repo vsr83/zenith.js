@@ -129,7 +129,8 @@ export interface ObserverTable {
 
     // 32. North pole RA & DEC
 
-    // 33. Galactic longitude and latitude.
+    // 33. Galactic longitude and latitude. Observer-centered.
+    galacticLonLat : number[];
 
     // 34. Local apparent solar time.
 
@@ -868,6 +869,31 @@ export class PostProcessing {
         return [
             MathUtils.dot(velUnit, unitRa) / MathUtils.cosd(decl),
             MathUtils.dot(velUnit, unitDe)
+        ];
+    }
+
+    /**
+     * Compute observer-centered galactic longitude and latitude.
+     * 
+     * @param {TargetResults} results
+     *      Target results.
+     * @param {ObserverInfo} observerInfo
+     *      Observer info.
+     * @returns {number[]} Galactic longitude and latitude in degrees with the ranges 
+     * [0, 360] and [-90, 90], respectively.
+     */
+    static computeGalLonLat(results : TargetResults, observerInfo : ObserverInfo, frameConversions : FrameConversions) : 
+    number[] {
+        let observer : StateVector = observerInfo.state;
+        observer = frameConversions.rotateTo(observer, FrameOrientation.GALACTIC);
+        let target : StateVector = <StateVector>results.stateMapAberrationRel.get(observer.frameCenter)
+            ?.get(FrameOrientation.J2000_EQ);
+        target = FrameConversions.rotateJ2000Gal(target);
+
+        const targetPosition : number[] = MathUtils.vecDiff(target.position, observer.position);
+        return [
+            Angles.limitAngleDeg(MathUtils.atan2d(targetPosition[1], targetPosition[0])),
+            MathUtils.asind(targetPosition[2] / MathUtils.norm(targetPosition))
         ];
     }
 }

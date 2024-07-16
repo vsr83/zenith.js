@@ -12,6 +12,7 @@ import { EopParams, SolarParams } from './EopParams';
  * Enumeration of supported frame orientations.
  */
 export enum FrameOrientation {
+    GALACTIC  = 'GALACTIC',
     B1950_ECL = 'B1950_ECL',
     B1950_EQ  = 'B1950_EQ',
     J2000_ECL = 'J2000_ECL',
@@ -114,6 +115,7 @@ const rotJ2000Ecl : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOri
 rotateMap.set(FrameOrientation.J2000_ECL, rotJ2000Ecl);
 rotJ2000Ecl.set(FrameOrientation.J2000_ECL, []);
 rotJ2000Ecl.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 2));
+rotJ2000Ecl.set(FrameOrientation.GALACTIC,  [FrameOrientation.J2000_EQ, FrameOrientation.GALACTIC]);
 rotJ2000Ecl.set(FrameOrientation.MOD,       mainRotSeq.slice(1, 3));
 rotJ2000Ecl.set(FrameOrientation.TOD,       mainRotSeq.slice(1, 4));
 rotJ2000Ecl.set(FrameOrientation.PEF,       mainRotSeq.slice(1, 5));
@@ -126,6 +128,7 @@ const rotJ2000 : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrient
 rotateMap.set(FrameOrientation.J2000_EQ, rotJ2000);
 rotJ2000.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 1));
 rotJ2000.set(FrameOrientation.J2000_EQ,  []);
+rotJ2000.set(FrameOrientation.GALACTIC,  [FrameOrientation.GALACTIC]);
 rotJ2000.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 3));
 rotJ2000.set(FrameOrientation.TOD,       mainRotSeq.slice(2, 4));
 rotJ2000.set(FrameOrientation.PEF,       mainRotSeq.slice(2, 5));
@@ -133,10 +136,23 @@ rotJ2000.set(FrameOrientation.EFI,       mainRotSeq.slice(2, 6));
 rotJ2000.set(FrameOrientation.ENU,       mainRotSeq.slice(2, 7));
 rotJ2000.set(FrameOrientation.TEME,      mainRotSeq.slice(2, 4).concat([FrameOrientation.TEME]));
 
+const rotGal : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
+rotateMap.set(FrameOrientation.GALACTIC, rotGal);
+rotGal.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 2).reverse());
+rotGal.set(FrameOrientation.J2000_EQ,  [FrameOrientation.J2000_EQ]);
+rotGal.set(FrameOrientation.GALACTIC,  []);
+rotGal.set(FrameOrientation.MOD,       mainRotSeq.slice(1, 3));
+rotGal.set(FrameOrientation.TOD,       mainRotSeq.slice(1, 4));
+rotGal.set(FrameOrientation.PEF,       mainRotSeq.slice(1, 5));
+rotGal.set(FrameOrientation.EFI,       mainRotSeq.slice(1, 6));
+rotGal.set(FrameOrientation.ENU,       mainRotSeq.slice(1, 7));
+rotGal.set(FrameOrientation.TEME,      mainRotSeq.slice(1, 4).concat([FrameOrientation.TEME]));
+
 const rotMoD : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientation, FrameOrientation[]>();
 rotateMap.set(FrameOrientation.MOD, rotMoD);
 rotMoD.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 2).reverse());
 rotMoD.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 2).reverse());
+rotMoD.set(FrameOrientation.GALACTIC,  mainRotSeq.slice(1, 2).reverse().concat([FrameOrientation.GALACTIC]));
 rotMoD.set(FrameOrientation.MOD,       []);
 rotMoD.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 4));
 rotMoD.set(FrameOrientation.PEF,       mainRotSeq.slice(3, 5));
@@ -148,6 +164,7 @@ const rotToD : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientat
 rotateMap.set(FrameOrientation.TOD, rotToD);
 rotToD.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 3).reverse());
 rotToD.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 3).reverse());
+rotToD.set(FrameOrientation.GALACTIC,  mainRotSeq.slice(1, 3).reverse().concat([FrameOrientation.GALACTIC]));
 rotToD.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 3).reverse());
 rotToD.set(FrameOrientation.TOD,       []);
 rotToD.set(FrameOrientation.PEF,       mainRotSeq.slice(4, 5));
@@ -159,6 +176,7 @@ const rotTeme : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrienta
 rotateMap.set(FrameOrientation.TEME, rotTeme);
 rotTeme.set(FrameOrientation.J2000_ECL, [FrameOrientation.TOD].concat(mainRotSeq.slice(0, 3).reverse()));
 rotTeme.set(FrameOrientation.J2000_EQ,  [FrameOrientation.TOD].concat(mainRotSeq.slice(1, 3).reverse()));
+rotTeme.set(FrameOrientation.GALACTIC,  [FrameOrientation.TOD].concat(mainRotSeq.slice(1, 3).reverse()).concat([FrameOrientation.GALACTIC]));
 rotTeme.set(FrameOrientation.MOD,       [FrameOrientation.TOD].concat(mainRotSeq.slice(2, 3).reverse()));
 rotTeme.set(FrameOrientation.TOD,       [FrameOrientation.TOD]);
 rotTeme.set(FrameOrientation.PEF,       [FrameOrientation.TOD].concat(mainRotSeq.slice(4, 5)));
@@ -170,6 +188,7 @@ const rotPef : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientat
 rotateMap.set(FrameOrientation.PEF, rotPef);
 rotPef.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 4).reverse());
 rotPef.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 4).reverse());
+rotPef.set(FrameOrientation.GALACTIC,  mainRotSeq.slice(1, 4).reverse().concat([FrameOrientation.GALACTIC]));
 rotPef.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 4).reverse());
 rotPef.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 4).reverse());
 rotPef.set(FrameOrientation.PEF,       []);
@@ -181,6 +200,7 @@ const rotEfi : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientat
 rotateMap.set(FrameOrientation.EFI, rotEfi);
 rotEfi.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 5).reverse());
 rotEfi.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 5).reverse());
+rotEfi.set(FrameOrientation.GALACTIC,  mainRotSeq.slice(1, 5).reverse().concat([FrameOrientation.GALACTIC]));
 rotEfi.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 5).reverse());
 rotEfi.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 5).reverse());
 rotEfi.set(FrameOrientation.PEF,       mainRotSeq.slice(4, 5).reverse());
@@ -192,6 +212,7 @@ const rotEnu : Map<FrameOrientation, FrameOrientation[]> = new Map<FrameOrientat
 rotateMap.set(FrameOrientation.ENU, rotEnu);
 rotEnu.set(FrameOrientation.J2000_ECL, mainRotSeq.slice(0, 6).reverse());
 rotEnu.set(FrameOrientation.J2000_EQ,  mainRotSeq.slice(1, 6).reverse());
+rotEnu.set(FrameOrientation.GALACTIC,  mainRotSeq.slice(1, 6).reverse().concat([FrameOrientation.GALACTIC]));
 rotEnu.set(FrameOrientation.MOD,       mainRotSeq.slice(2, 6).reverse());
 rotEnu.set(FrameOrientation.TOD,       mainRotSeq.slice(3, 6).reverse());
 rotEnu.set(FrameOrientation.PEF,       mainRotSeq.slice(4, 6).reverse());
@@ -664,6 +685,66 @@ export class FrameConversions {
             velocity : vEq, 
             timeStamp : osvJ2000Ecl.timeStamp
         };
+    }
+
+    /**
+     * Rotate OSV from J2000 equatorial to Galactic frame.
+     * 
+     * The implementation follows Liu, Zhu, Zhang - Reconsidering the Galactic System,
+     * Astronomy & Astrophysics, 2010.
+     * 
+     * @param {StateVector} osvGal 
+     *      OSV in J2000 equatorial frame. 
+     */
+    static rotateJ2000Gal(osvJ2000 : StateVector) : StateVector {
+        const r : number[] = osvJ2000.position;
+        const v : number[] = osvJ2000.velocity;
+
+        return {
+            timeStamp : osvJ2000.timeStamp,
+            frameCenter : osvJ2000.frameCenter,
+            frameOrientation : FrameOrientation.GALACTIC,
+            position : [
+               -0.0548755604 * r[0] -0.8734370902 * r[1] -0.4838350155 * r[2],
+                0.4941094279 * r[0] -0.4448296300 * r[1] +0.7469822445 * r[2],
+               -0.8676661490 * r[0] -0.1980763734 * r[1] +0.4559837762 * r[2]
+            ],
+            velocity : [
+                -0.0548755604 * v[0] -0.8734370902 * v[1] -0.4838350155 * v[2],
+                 0.4941094279 * v[0] -0.4448296300 * v[1] +0.7469822445 * v[2],
+                -0.8676661490 * v[0] -0.1980763734 * v[1] +0.4559837762 * v[2]
+             ]
+         };
+    }
+
+    /**
+     * Rotate OSV from Galactic frame to J2000 equatorial frame.
+     * 
+     * The implementation follows Liu, Zhu, Zhang - Reconsidering the Galactic System,
+     * Astronomy & Astrophysics, 2010.
+     * 
+     * @param {StateVector} osvGal 
+     *      OSV in Galactic frame. 
+     */
+    static rotateGalJ2000(osvGal : StateVector) : StateVector {
+        const r : number[] = osvGal.position;
+        const v : number[] = osvGal.velocity;
+
+        return {
+            timeStamp : osvGal.timeStamp,
+            frameCenter : osvGal.frameCenter,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : [
+                -0.0548755604 * r[0] +0.4941094279 * r[1] -0.8676661490 * r[2],
+                -0.8734370902 * r[0] -0.4448296300 * r[1] -0.1980763734 * r[2],
+                -0.4838350155 * r[0] +0.7469822445 * r[1] +0.4559837762 * r[2]
+            ],
+            velocity : [
+                -0.0548755604 * v[0] +0.4941094279 * v[1] -0.8676661490 * v[2],
+                -0.8734370902 * v[0] -0.4448296300 * v[1] -0.1980763734 * v[2],
+                -0.4838350155 * v[0] +0.7469822445 * v[1] +0.4559837762 * v[2]
+             ]
+         };
     }
 
     /**

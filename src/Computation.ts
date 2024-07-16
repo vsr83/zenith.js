@@ -342,6 +342,8 @@ export class Computation {
             raDeclInertialApp : PostProcessing.computeRaDeclInertial(targetResults, this.observer,
                 frameConversions),
             raDeclInertialRate : PostProcessing.computeRaDeclInertialRate(targetResults, this.observer,
+                frameConversions),
+            galacticLonLat : PostProcessing.computeGalLonLat(targetResults, this.observer,
                 frameConversions)
         };
 
