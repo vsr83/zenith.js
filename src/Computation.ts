@@ -16,6 +16,7 @@ import { EarthPosition } from "./Wgs84";
 import { TargetResults, TimeStepResults, ObserverTable } from "./Results";
 import { Aberration } from "./Corrections/Aberration";
 import { PostProcessing } from "./Results";
+import { GravDeflection } from "./Corrections/GravDeflection";
 
 /**
  * Class organizing the high-level computation.
@@ -166,7 +167,11 @@ export class Computation {
                 solarParams, integrationState);
         }
 
-        // Correction 2: Aberration.
+        // Correction 2: Gravitational Deflection.
+        stateVectorCorrected = GravDeflection.gravDeflection(stateVectorCorrected, solarParams, 
+            this.observer, frameConversions);
+
+        // Correction 3: Aberration.
         stateVectorCorrected = frameConversions.translateTo(stateVectorCorrected, FrameCenter.BODY_CENTER);
 
         let observerSsb = frameConversions.rotateTo(this.observer.state, FrameOrientation.J2000_EQ);

@@ -720,6 +720,7 @@ describe('Frames', function() {
         const nutData = Nutation.iau1980(timeStamp.getJulian());
         const eopParams : EopParams = {
             timeStampTdb : timeStamp,
+            timeStampUtc : timeStamp,
             timeStampUt1 : timeStamp,
             polarDx : 0.1,
             polarDy : 0.2,

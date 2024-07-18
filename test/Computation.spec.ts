@@ -31,7 +31,7 @@ describe('Computation', function() {
         it('Mercury', function() {
 
             const timeParameters : TimeParametersInfo = TimeParameters.createFromJulianSpan(
-                2450497.5000000, 2450498.5000000, 1, TimeConvention.TIME_UTC
+                2450497.5000000, 2450520, 22.5, TimeConvention.TIME_UTC
             );
             const corrections : CorrectionInfo = {
                 corrections : [CorrectionType.LIGHT_TIME],
