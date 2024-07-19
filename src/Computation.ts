@@ -17,6 +17,7 @@ import { TargetResults, TimeStepResults, ObserverTable } from "./Results";
 import { Aberration } from "./Corrections/Aberration";
 import { PostProcessing } from "./Results";
 import { GravDeflection } from "./Corrections/GravDeflection";
+import { Hipparcos } from "./Hipparcos";
 
 /**
  * Class organizing the high-level computation.
@@ -152,19 +153,21 @@ export class Computation {
         let stateVectorCorrected : StateVector = stateVectorRaw;
 
         let lightTimeDays : number = 0.0;
-        for (let iter = 0; iter < 3; iter ++) {
-            lightTimeDays = this.computeLightTime(this.observer.state, 
-                stateVectorCorrected, frameConversions);
+        if (target.type == TargetType.SSIE) {
+            for (let iter = 0; iter < 3; iter ++) {
+                lightTimeDays = this.computeLightTime(this.observer.state, 
+                    stateVectorCorrected, frameConversions);
 
-            let timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
-                timeStamp.getConvention(), timeStamp.getJulian() - lightTimeDays);
-            timeStampCorrected = timeStampCorrected.changeTo(this.timeCorrelation, timeStampCorrected.getFormat(),
-                TimeConvention.TIME_TDB);
+                let timeStampCorrected : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
+                    timeStamp.getConvention(), timeStamp.getJulian() - lightTimeDays);
+                timeStampCorrected = timeStampCorrected.changeTo(this.timeCorrelation, timeStampCorrected.getFormat(),
+                    TimeConvention.TIME_TDB);
 
-            const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
+                const integrationState : IntegrationState = this.engine.get(timeStampCorrected.getJulian());
 
-            stateVectorCorrected = this.computeStateVector(timeStamp, target, eopParams, 
-                solarParams, integrationState);
+                stateVectorCorrected = this.computeStateVector(timeStamp, target, eopParams, 
+                    solarParams, integrationState);
+            }
         }
 
         // Correction 2: Gravitational Deflection.
@@ -182,9 +185,6 @@ export class Computation {
         const stateVectorAberrationRel : StateVector = Aberration.aberrationStellarRel(stateVectorCorrected,
             observerSsb);
     
-        //const rCorr = Aberration.aberrationStellarCart(timeStamp.getJulian(), stateVectorCorrected.position, [0,0,0]);
-        //stateVectorAberrationCla.position = rCorr;
-
         const stateMapCorrected : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
             frameConversions.getAll(stateVectorCorrected);
         const stateMapAberrationCla : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
@@ -228,6 +228,8 @@ export class Computation {
                     stateVector = this.ssieToStateVector(timeStamp, state, target.refNumber);
                     break;
                 case TargetType.STAR_HIPPARCHUS:
+                    stateVector = this.hipparcosToStateVector(timeStamp, state, target.refString,
+                        solarParams);
                     break;
                 case TargetType.SATELLITE_SGP4:
                     break;
@@ -259,6 +261,43 @@ export class Computation {
             MathUtils.vecDiff(state.pointMasses[indBody].r, state.pointMasses[0].r), auMeters);
         const velTarget : number[] = MathUtils.vecMul(
             MathUtils.vecDiff(state.pointMasses[indBody].v, state.pointMasses[0].v), auMeters / secondsPerDay);
+
+        return {
+            frameCenter : FrameCenter.HELIOCENTER,
+            frameOrientation : FrameOrientation.J2000_EQ,
+            position : posTarget, 
+            velocity : velTarget,
+            timeStamp : timeStamp
+        }
+    }
+
+    /**
+     * Transform integration state for a SSIE body to a state vector.
+     * 
+     * @param {TimeStamp} timeStamp
+     *      Time stamp used for the computation. 
+     * @param {IntegrationState} state
+     *      SSIE IntegrationState. 
+     * @param {string} designation
+     *      Designation of the Hipparcos target.
+     * @param {SolarParams} solarParams
+     *      Solar System parameters.
+     */
+    hipparcosToStateVector(timeStamp : TimeStamp, state : IntegrationState, designation : string,
+        solarParams : SolarParams) : StateVector {
+
+        const timeStampTdb = timeStamp.changeTo(this.timeCorrelation, TimeFormat.FORMAT_JULIAN,
+            TimeConvention.TIME_TDB);
+        const hipData = Hipparcos.hipparcosGet(designation, timeStampTdb.getJulian(), 
+            solarParams.geoState.position);
+
+        // Convert from spherical to Cartesian coordinates.
+        const auMeters = constants.au * 1000.0;
+        const distance = auMeters * 1.0e12;
+        const posTarget = [distance * MathUtils.cosd(hipData.DE) * MathUtils.cosd(hipData.RA),
+                           distance * MathUtils.cosd(hipData.DE) * MathUtils.sind(hipData.RA),
+                           distance * MathUtils.sind(hipData.DE)];
+        const velTarget = [0, 0, 0];
 
         return {
             frameCenter : FrameCenter.HELIOCENTER,

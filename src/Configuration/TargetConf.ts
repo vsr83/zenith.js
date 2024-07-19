@@ -1,3 +1,4 @@
+import { Hipparcos } from "../Hipparcos";
 import { IntegrationState } from "../SSIE/Integration";
 import { JPLData } from "../SSIE/JPLData";
 import { PointMassState } from "../SSIE/PointMass";
@@ -71,11 +72,30 @@ function addJplTargets() {
         const name = pointMassState[indPointMass].name;    
     
         insertTarget({name : name, type : TargetType.SSIE, uuid : name + "_SSIE",
-        description : desc, refString : name, refNumber : indPointMass});
+        description : desc, refString : name, refNumber : targetList.length - 1});
+    }
+}
+
+/**
+ * Add Hipparcos targets.
+ */
+function addHipparcosTargets() {
+    const hipparcosList : string[] = Hipparcos.hipparcosFind("");
+    console.log(hipparcosList);
+
+    const desc : string = "Target imported from the Hipparcos catalogue.";
+
+    for (let indTarget = 0; indTarget < hipparcosList.length; indTarget++) {
+        const targetName : string = hipparcosList[indTarget];
+
+        insertTarget({name : targetName, type : TargetType.STAR_HIPPARCHUS, 
+            uuid : targetName + "_HIP",
+            description : desc, refString : targetName, refNumber : indTarget});
     }
 }
 
 addJplTargets();
+addHipparcosTargets();
 
 targetList[<number> targetMap.get("Sun_SSIE")].metadata     = {diameter : 1.3927e9,  eqRadius : 696350000,polarRadius : 696350000};
 targetList[<number> targetMap.get("Mercury_SSIE")].metadata = {diameter : 4881060,   eqRadius : 2440530,  polarRadius : 2438260};

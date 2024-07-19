@@ -68,6 +68,7 @@ describe('Computation', function() {
                     console.log(timeStepResults.results[indTarget].stateMapRaw
                         .get(FrameCenter.PLANET_TOPO)
                         ?.get(FrameOrientation.ENU));
+                    /*
                     console.log("light-time");
                     console.log(timeStepResults.results[indTarget].stateMapLightTime
                         .get(FrameCenter.PLANET_TOPO)
@@ -91,7 +92,80 @@ describe('Computation', function() {
                     console.log("fooo");
                     console.log(timeStepResults.results[indTarget].stateMapLightTime
                         .get(FrameCenter.BODY_CENTER)
-                        ?.get(FrameOrientation.J2000_EQ)); 
+                        ?.get(FrameOrientation.J2000_EQ)); */
+                }
+            }
+        });
+    });
+
+    describe('Stars', function() {
+        it('Vega', function() {
+
+            const timeParameters : TimeParametersInfo = TimeParameters.createFromJulianSpan(
+                2450497.5000000, 2450520, 22.5, TimeConvention.TIME_UTC
+            );
+            const corrections : CorrectionInfo = {
+                corrections : [CorrectionType.LIGHT_TIME],
+                refractionParams : {refractionModel : RefractionModel.NO_CORRECTION}
+            };
+            const earthPos : EarthPosition = {lat : 61.4945763, lon : 23.8283, h : 121.916};
+            const dummyTimeStamp : TimeStamp = new TimeStamp(
+                TimeFormat.FORMAT_JULIAN, 
+                TimeConvention.TIME_TDB,
+                2458849.5000000);
+    
+            const observer : ObserverInfo = Observer.initializeFromWgs84(earthPos, dummyTimeStamp);
+
+
+            
+            const target : Target = targetList[<number> targetMap.get("3 Alpha Lyrae (Vega)_HIP")];
+            const targetSel : Target[] = [target];
+
+            const computationInfo : ComputationInfo = {
+                timeParameters : timeParameters,
+                corrections : corrections,
+                observer : observer,
+                targetList : targetSel
+            };
+
+            const computation : Computation = new Computation(computationInfo);
+            const results : TimeStepResults[] = computation.compute();
+
+            for (let timeStep = 0; timeStep < results.length; timeStep++) {
+                const timeStepResults : TimeStepResults = results[timeStep];
+                
+                for (let indTarget = 0; indTarget < timeStepResults.targets.length; indTarget++) {
+                    console.log(timeStepResults.results[indTarget].stateMapRaw
+                        .get(FrameCenter.HELIOCENTER)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log(timeStepResults.results[indTarget].stateMapRaw
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    /*
+                    console.log("light-time");
+                    console.log(timeStepResults.results[indTarget].stateMapLightTime
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    console.log("aberrationcla");
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationCla
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationRel
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.ENU));
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationRel
+                        .get(FrameCenter.PLANET_TOPO)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log(timeStepResults.results[indTarget].stateMapLightTime
+                        .get(FrameCenter.BODY_CENTER)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log(timeStepResults.results[indTarget].stateMapAberrationCla
+                        .get(FrameCenter.BODY_CENTER)
+                        ?.get(FrameOrientation.J2000_EQ));
+                    console.log("fooo");
+                    console.log(timeStepResults.results[indTarget].stateMapLightTime
+                        .get(FrameCenter.BODY_CENTER)
+                        ?.get(FrameOrientation.J2000_EQ)); */
                 }
             }
         });
