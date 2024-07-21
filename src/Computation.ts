@@ -93,6 +93,7 @@ export class Computation {
 
         const targets : Target[] = [];
         const results : TargetResults[] = [];
+        const observerTables : ObserverTable[] = [];
 
         // Initialize frame conversions class.
         const frameConversions : FrameConversions = new FrameConversions(
@@ -108,7 +109,8 @@ export class Computation {
             const observerTable : ObserverTable = this.computeObserverTable(
                 targetResults, eopParams, solarParams
             );
-            console.log(observerTable);
+
+            observerTables.push(observerTable)
             targets.push(target);
             results.push(targetResults);
         }
@@ -116,7 +118,8 @@ export class Computation {
         return {
             timeStamp : timeStamp,
             targets : targets,
-            results : results
+            results : results,
+            observerTables : observerTables
         };
     }
 
@@ -215,7 +218,7 @@ export class Computation {
      *      The solar system parameters.
      * @param {IntegrationState} state 
      *      The integration state of the solar system.
-     * @return {TargetResults} Target results for a single time step.
+     * @return {StateVector} Target state vector.
      */
     computeStateVector(timeStamp : TimeStamp, target : Target, eopParams : EopParams,
         solarParams : SolarParams, state : IntegrationState) : StateVector {

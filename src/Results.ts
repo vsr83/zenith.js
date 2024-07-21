@@ -170,8 +170,11 @@ export interface TimeStepResults {
     // Target info.
     targets : Target[];
 
-    // Results for each time step.
+    // Basic results for each target.
     results : TargetResults[];
+
+    // Observer table for each target.
+    observerTables? : ObserverTable[];
 };
 
 /**
