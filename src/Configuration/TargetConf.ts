@@ -72,7 +72,7 @@ function addJplTargets() {
         const name = pointMassState[indPointMass].name;    
     
         insertTarget({name : name, type : TargetType.SSIE, uuid : name + "_SSIE",
-        description : desc, refString : name, refNumber : targetList.length - 1});
+        description : desc, refString : name, refNumber : targetList.length});
     }
 }
 
@@ -81,7 +81,6 @@ function addJplTargets() {
  */
 function addHipparcosTargets() {
     const hipparcosList : string[] = Hipparcos.hipparcosFind("");
-    console.log(hipparcosList);
 
     const desc : string = "Target imported from the Hipparcos catalogue.";
 
