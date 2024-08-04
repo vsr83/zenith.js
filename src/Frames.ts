@@ -900,7 +900,7 @@ export class FrameConversions {
      * @returns {OsvFrame} OSV in PEF frame.
      */
     static rotateTodPef(osv : StateVector, GAST : number, jtUt1 : number) : StateVector
-    {
+    {        
         const rPef = Rotations.rotateCart3d(osv.position, GAST);
         const vPef = Rotations.rotateCart3d(osv.velocity, GAST);
 

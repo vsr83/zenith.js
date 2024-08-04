@@ -58,4 +58,8 @@ export class SiderealTime
         //return limitAngleDeg(GMST - atand(N12 / N11));
         return Angles.limitAngleDeg(GMST + nutParams.dpsi * MathUtils.cosd(nutParams.eps));
     }
+
+    static earthRotAngle(jtUt1 : number) {
+        return Angles.limitAngleDeg(360.0 * (0.7790572732640 + 1.00273781191135448 * (jtUt1 - 2451545.0)));
+    }
 }

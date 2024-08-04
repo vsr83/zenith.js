@@ -57,7 +57,7 @@ export class Computation {
     /**
      * Perform computation for all time steps and targets.
      */
-    compute() : TimeStepResults[] {
+    compute(deltaGast : number[] | undefined) : TimeStepResults[] {
         const timeSteps : TimeParametersInfo = TimeParameters.convertToJulianList(this.timeParameters);
         const timeStepsJulian : number[] = <number[]> timeSteps.listJulian;
 
@@ -67,7 +67,11 @@ export class Computation {
             const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
                 this.timeParameters.convention, timeStepsJulian[indTimestep]);
 
-            const timeStepResults : TimeStepResults = this.computeTimeStep(timeStamp);
+            let deltaGastStep = 0;
+            if (!(deltaGast === undefined)) {
+                deltaGastStep = deltaGast[indTimestep];
+            }
+            const timeStepResults : TimeStepResults = this.computeTimeStep(timeStamp, deltaGastStep);
             results.push(timeStepResults);
         }
 
@@ -81,9 +85,11 @@ export class Computation {
      *      Time stamp. 
      * @returns {TimeStepResults} Results for all targets for the given time step.
      */
-    computeTimeStep(timeStamp : TimeStamp) : TimeStepResults {
+    computeTimeStep(timeStamp : TimeStamp, deltaGast : number) : TimeStepResults {
         // Perform time correlations and EOP interpolation.
         const eopParams : EopParams = EopComputation.computeEopData(timeStamp, this.timeCorrelation);
+
+        eopParams.GAST = eopParams.GAST + deltaGast;
 
         // We integrate the Solar System regardless of target type. Note that SSIE implements
         // a cache so that the integration is done exactly once for each unique time stamp.
@@ -110,7 +116,9 @@ export class Computation {
                 targetResults, eopParams, solarParams
             );
 
-            observerTables.push(observerTable)
+            //console.log(observerTable);
+
+            observerTables.push(observerTable);
             targets.push(target);
             results.push(targetResults);
         }
@@ -119,7 +127,8 @@ export class Computation {
             timeStamp : timeStamp,
             targets : targets,
             results : results,
-            observerTables : observerTables
+            observerTables : observerTables,
+            eopParams : eopParams
         };
     }
 

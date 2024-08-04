@@ -108,5 +108,5 @@ targetList[<number> targetMap.get("Uranus_SSIE")].metadata  = {diameter : 507240
 targetList[<number> targetMap.get("Neptune_SSIE")].metadata = {diameter : 49244000,  eqRadius : 24764000, polarRadius : 24341000};
 targetList[<number> targetMap.get("Pluto_SSIE")].metadata   = {diameter : 2376600,   eqRadius : 1188000,  polarRadius : 1188000};
 
-console.log(targetList);
-console.log(targetMap);
+//console.log(targetList);
+//console.log(targetMap);

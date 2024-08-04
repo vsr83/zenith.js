@@ -40,7 +40,7 @@ export class Wgs84
         }
         if (maxIter === undefined)
         {
-            maxIter = 5;
+            maxIter = 15;
         }
         if (maxErr === undefined)
         {

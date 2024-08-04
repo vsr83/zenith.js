@@ -179,6 +179,7 @@ export class TimeParameters {
             }
         } else if (infoList.mode == TimeParamsMode.LIST_GREGORIAN) {
             const listGreg : GregorianTime[] = <GregorianTime[]> info.listGregorian;
+
             for (let ind = 0; ind < listGreg.length; ind++) {
                 const timeStamp : TimeStamp = TimeStamp.fromGregorian(listGreg[ind], info.convention);
                 julianList.push(timeStamp.getJulian());

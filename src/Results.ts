@@ -27,7 +27,8 @@ export interface TargetResults {
     // State map with positions and velocities corrected for light time.
     stateMapLightTime : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
 
-    // State map with positions and velocities corrected for light time and aberration.
+    // State map with positions and velocities corrected for light time, gravitational 
+    // deflection and aberration.
     stateMapAberrationCla : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
     stateMapAberrationRel : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
     //stateMapAberration : Map<FrameCenter, Map<FrameOrientation, StateVector>>;
@@ -175,6 +176,9 @@ export interface TimeStepResults {
 
     // Observer table for each target.
     observerTables? : ObserverTable[];
+
+    // Earth orientation parameters.
+    eopParams : EopParams;
 };
 
 /**
