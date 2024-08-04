@@ -57,7 +57,7 @@ export class Computation {
     /**
      * Perform computation for all time steps and targets.
      */
-    compute(deltaGast : number[] | undefined) : TimeStepResults[] {
+    compute() : TimeStepResults[] {
         const timeSteps : TimeParametersInfo = TimeParameters.convertToJulianList(this.timeParameters);
         const timeStepsJulian : number[] = <number[]> timeSteps.listJulian;
 
@@ -67,11 +67,7 @@ export class Computation {
             const timeStamp : TimeStamp = new TimeStamp(TimeFormat.FORMAT_JULIAN, 
                 this.timeParameters.convention, timeStepsJulian[indTimestep]);
 
-            let deltaGastStep = 0;
-            if (!(deltaGast === undefined)) {
-                deltaGastStep = deltaGast[indTimestep];
-            }
-            const timeStepResults : TimeStepResults = this.computeTimeStep(timeStamp, deltaGastStep);
+            const timeStepResults : TimeStepResults = this.computeTimeStep(timeStamp);
             results.push(timeStepResults);
         }
 
@@ -85,11 +81,9 @@ export class Computation {
      *      Time stamp. 
      * @returns {TimeStepResults} Results for all targets for the given time step.
      */
-    computeTimeStep(timeStamp : TimeStamp, deltaGast : number) : TimeStepResults {
+    computeTimeStep(timeStamp : TimeStamp) : TimeStepResults {
         // Perform time correlations and EOP interpolation.
         const eopParams : EopParams = EopComputation.computeEopData(timeStamp, this.timeCorrelation);
-
-        eopParams.GAST = eopParams.GAST + deltaGast;
 
         // We integrate the Solar System regardless of target type. Note that SSIE implements
         // a cache so that the integration is done exactly once for each unique time stamp.

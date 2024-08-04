@@ -166,8 +166,8 @@ export class EopComputation {
         // Compute polar motion.
         const polarData : number[] = EopComputation.interpolateSearch(polarMotionData, 
             timeStampUt1.getJulian(), true);
-        const polarDx : number = 0 * polarData[1] / 3600;
-        const polarDy : number = 0 * polarData[2] / 3600;
+        const polarDx : number = polarData[1] / 3600;
+        const polarDy : number = polarData[2] / 3600;
     
         // Compute nutation params:
         const nutParams : NutationData = Nutation.iau1980(timeStampTdb.getJulian());
