@@ -176,9 +176,15 @@ export class Computation {
             }
         }
 
+        const stateMapLightTime : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
+            frameConversions.getAll(stateVectorCorrected);
+
         // Correction 2: Gravitational Deflection.
-        stateVectorCorrected = GravDeflection.gravDeflection(stateVectorCorrected, solarParams, 
-            this.observer, frameConversions);
+        // Do not perform correction for the Sun itself.
+        if (target.type != TargetType.SSIE || target.refNumber != 0) {
+            stateVectorCorrected = GravDeflection.gravDeflection(stateVectorCorrected, solarParams, 
+                this.observer, frameConversions);
+        }
 
         // Correction 3: Aberration.
         stateVectorCorrected = frameConversions.translateTo(stateVectorCorrected, FrameCenter.BODY_CENTER);
@@ -191,8 +197,6 @@ export class Computation {
         const stateVectorAberrationRel : StateVector = Aberration.aberrationStellarRel(stateVectorCorrected,
             observerSsb);
     
-        const stateMapCorrected : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
-            frameConversions.getAll(stateVectorCorrected);
         const stateMapAberrationCla : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
         frameConversions.getAll(stateVectorAberrationCla);
         const stateMapAberrationRel : Map<FrameCenter, Map<FrameOrientation, StateVector>> = 
@@ -201,7 +205,7 @@ export class Computation {
         return {
             target : target,
             stateMapRaw : stateMapRaw,
-            stateMapLightTime : stateMapCorrected,
+            stateMapLightTime : stateMapLightTime,
             stateMapAberrationCla : stateMapAberrationCla,
             stateMapAberrationRel : stateMapAberrationRel,
             lightTimeDays : lightTimeDays
